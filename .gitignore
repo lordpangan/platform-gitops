@@ -1,0 +1,24 @@
+# secrets / creds — never commit
+*.env
+.env
+*.pem
+*.key
+.secrets/
+
+# terraform local state (should live in remote backend, never in git)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# claude / agent tooling — keep AI scaffolding out of the repo
+.claude/
+CLAUDE.md
+AGENTS.md
+docs/agents/
+.scratch/
+
+# local / editor
+.DS_Store
+.vscode/
+.idea/
