@@ -1,0 +1,44 @@
+# XNetwork — the network layer API (a shared VPC).
+# Crossplane v2 namespaced XRD (scope: Namespaced): the XR *is* the claim.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xnetworks.platform.meridian.io
+spec:
+  scope: Namespaced
+  group: platform.meridian.io
+  names:
+    kind: XNetwork
+    plural: xnetworks
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                cidr:
+                  type: string
+                  default: "10.0.0.0/16"
+                  description: VPC CIDR block. Override for peering / non-overlap.
+                  pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$'
+                azCount:
+                  type: integer
+                  default: 2
+                  minimum: 2
+                  description: Availability Zones to spread across (minimum 2 — EKS needs >=2 subnets).
+                tags:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Extra tags merged onto every resource in the network.
+            status:
+              type: object
+              properties:
+                vpcId:
+                  type: string
+                  description: The provisioned VPC id (set from the Workspace output).

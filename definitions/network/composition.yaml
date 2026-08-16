@@ -1,0 +1,104 @@
+# XNetwork Composition — renders one provider-opentofu Workspace that runs the
+# community vpc module. Values flow in via OpenTofu `vars`; the module HCL is
+# static. Region is NOT passed — it comes from the ClusterProviderConfig
+# (ap-southeast-1), so the AZ data source resolves in Singapore (residency).
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xnetwork
+spec:
+  compositeTypeRef:
+    apiVersion: platform.meridian.io/v1alpha1
+    kind: XNetwork
+  mode: Pipeline
+  pipeline:
+    - step: render-workspace
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            apiVersion: opentofu.m.upbound.io/v1beta1
+            kind: Workspace
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "network" }}
+              name: {{ $xr.metadata.name }}-network
+              namespace: {{ $xr.metadata.namespace }}
+            spec:
+              providerConfigRef:
+                name: aws-default
+                kind: ClusterProviderConfig
+              forProvider:
+                source: Inline
+                vars:
+                  - key: cidr
+                    value: "{{ $xr.spec.cidr }}"
+                  - key: az_count
+                    value: "{{ $xr.spec.azCount }}"
+                  - key: network_name
+                    value: "{{ $xr.metadata.name }}"
+                  - key: user_tags_json
+                    value: '{{ $xr.spec.tags | default dict | toJson }}'
+                module: |
+                  terraform {
+                    backend "s3" {
+                      bucket                   = "platform-eng-tfstate-402938032254"
+                      key                      = "network/terraform.tfstate"
+                      region                   = "ap-southeast-1"
+                      dynamodb_table           = "platform-eng-tf-locks"
+                      encrypt                  = true
+                      shared_credentials_files = ["aws-creds.ini"]
+                    }
+                  }
+
+                  variable "cidr"           { type = string }
+                  variable "az_count"       { type = number }
+                  variable "network_name"   { type = string }
+                  variable "user_tags_json" {
+                    type    = string
+                    default = "{}"
+                  }
+
+                  data "aws_availability_zones" "available" {
+                    state = "available"
+                  }
+
+                  locals {
+                    azs = slice(data.aws_availability_zones.available.names, 0, var.az_count)
+                    tags = merge(
+                      jsondecode(var.user_tags_json),
+                      {
+                        "network"    = var.network_name
+                        "managed-by" = "crossplane"
+                        "layer"      = "network"
+                      },
+                    )
+                  }
+
+                  module "vpc" {
+                    source  = "terraform-aws-modules/vpc/aws"
+                    version = "~> 5.0"
+
+                    name = var.network_name
+                    cidr = var.cidr
+                    azs  = local.azs
+
+                    private_subnets = [for i, az in local.azs : cidrsubnet(var.cidr, 4, i)]
+                    public_subnets  = [for i, az in local.azs : cidrsubnet(var.cidr, 4, i + 8)]
+
+                    enable_nat_gateway = false
+
+                    tags = local.tags
+                  }
+
+                  output "vpc_id" {
+                    value = module.vpc.vpc_id
+                  }
+                  output "private_subnet_ids" {
+                    value = module.vpc.private_subnets
+                  }

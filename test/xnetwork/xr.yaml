@@ -1,0 +1,12 @@
+# Example XNetwork claim used by the render test.
+apiVersion: platform.meridian.io/v1alpha1
+kind: XNetwork
+metadata:
+  name: sandbox
+  namespace: platform
+spec:
+  cidr: 10.20.0.0/16
+  azCount: 2
+  tags:
+    owner: platform-team
+    env: sandbox
