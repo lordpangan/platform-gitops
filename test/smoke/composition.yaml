@@ -1,0 +1,29 @@
+# Trivial Composition proving the go-templating render pipeline works end to end.
+# Not part of the platform — just the harness smoke test (ticket 01).
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xsmoke
+spec:
+  compositeTypeRef:
+    apiVersion: example.platform.meridian.io/v1alpha1
+    kind: XSmoke
+  mode: Pipeline
+  pipeline:
+    - step: render
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: smoke
+              annotations:
+                {{ setResourceNameAnnotation "smoke-cm" }}
+            data:
+              hello: "go-templating renders for {{ .observed.composite.resource.metadata.name }}"

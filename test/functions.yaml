@@ -1,0 +1,8 @@
+# Functions available to `crossplane render`. Shared by every render test.
+# render runs this as a local container (Docker/colima), so it stays offline.
+apiVersion: pkg.crossplane.io/v1
+kind: Function
+metadata:
+  name: function-go-templating
+spec:
+  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.12.3

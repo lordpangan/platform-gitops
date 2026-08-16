@@ -19,7 +19,7 @@ platform-gitops/
 ## What lives where
 
 - **`definitions/`** — the platform's API: the reusable XRDs + Compositions, for
-  **both** infra (an `XEKSCluster` whose Composition wraps a `provider-terraform`
+  **both** infra (an `XEKSCluster` whose Composition wraps a `provider-opentofu`
   `Workspace`) and apps (`WebApp` → Deployment + Service + HPA + Ingress).
 - **`infra-requests/`** — the infra **claims** that spin up real cloud resources
   (VPC, IAM/OIDC, EKS). These are claims against an infra XRD, not raw `Workspace`
@@ -35,6 +35,23 @@ Developers **author through Backstage** — its scaffolder writes files into
 **debugging escape hatch**: when something breaks, they *can* read the real
 request and the generated resources. Hide Kubernetes in authoring; expose it in
 debugging.
+
+## Rendering & tests (development)
+
+The `definitions/` are checked offline with **`crossplane render`** — no cluster,
+no AWS, $0. It runs each composition function as a local container, so you need a
+Docker daemon (Docker Desktop, or `colima start`) plus the shared devbox toolchain.
+
+```sh
+make test-smoke     # prove the render harness works (render + assert)
+make render-smoke   # print the composed output for the smoke composite
+make help           # list targets
+```
+
+The Makefile auto-detects the Docker endpoint from your active `docker context`
+(colima or Docker Desktop). The `crossplane` CLI comes from the shared
+[`../devbox.json`](../devbox.json) (`crossplane-cli`, version-pinned). The harness
+under `test/` is the single seam every XRD/Composition is asserted at.
 
 ## Documentation
 

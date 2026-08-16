@@ -1,0 +1,6 @@
+# A trivial composite resource for the harness smoke test (ticket 01).
+apiVersion: example.platform.meridian.io/v1alpha1
+kind: XSmoke
+metadata:
+  name: smoke
+spec: {}
