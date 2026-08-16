@@ -1,0 +1,74 @@
+# XEKSCluster — the EKS cluster API. Deploys into an existing XNetwork (by tag).
+# Crossplane v2 namespaced XRD.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: xeksclusters.platform.meridian.io
+spec:
+  scope: Namespaced
+  group: platform.meridian.io
+  names:
+    kind: XEKSCluster
+    plural: xeksclusters
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - networkRef
+                - mode
+              properties:
+                networkRef:
+                  type: string
+                  description: Name of the XNetwork to deploy into (matched by the network=<name> tag).
+                mode:
+                  type: string
+                  enum: [dev, prd]
+                  description: >-
+                    Environment profile. Selects the node preset
+                    (dev = SPOT/t3.small/1-2-3, prd = ON_DEMAND/t3.medium/2-3-6).
+                    Individual nodes.* fields override the preset.
+                version:
+                  type: string
+                  default: "1.33"
+                  enum: ["1.31", "1.32", "1.33"]
+                  description: Kubernetes version (constrained to supported versions).
+                nodes:
+                  type: object
+                  description: Optional overrides of the mode preset.
+                  properties:
+                    instanceType:
+                      type: string
+                      enum: ["t3.small", "t3.medium", "t3.large"]
+                      description: Override the preset instance type (allowlisted).
+                    capacityType:
+                      type: string
+                      enum: ["SPOT", "ON_DEMAND"]
+                      description: Override the preset capacity type.
+                    min:
+                      type: integer
+                      minimum: 1
+                    desired:
+                      type: integer
+                      minimum: 1
+                    max:
+                      type: integer
+                      minimum: 1
+                tags:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Extra tags merged onto every resource in the cluster.
+            status:
+              type: object
+              properties:
+                clusterName:
+                  type: string
+                clusterEndpoint:
+                  type: string

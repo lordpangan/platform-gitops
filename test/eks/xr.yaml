@@ -1,0 +1,12 @@
+# Example XEKSCluster claim (minimal dev) used by the render test.
+apiVersion: platform.meridian.io/v1alpha1
+kind: XEKSCluster
+metadata:
+  name: sandbox
+  namespace: platform
+spec:
+  networkRef: sandbox
+  mode: dev
+  tags:
+    owner: platform-team
+    env: sandbox

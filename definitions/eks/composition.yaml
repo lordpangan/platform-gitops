@@ -1,0 +1,145 @@
+# XEKSCluster Composition — renders one provider-opentofu Workspace that runs the
+# community eks module into an existing network (discovered by the network=<name>
+# tag). Node config is selected from a mode preset. Ticket 04 wires preset
+# SELECTION (dev tested); ticket 05 adds the override-merge (explicit nodes.* win).
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xekscluster
+spec:
+  compositeTypeRef:
+    apiVersion: platform.meridian.io/v1alpha1
+    kind: XEKSCluster
+  mode: Pipeline
+  pipeline:
+    - step: render-workspace
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource -}}
+            {{- $presets := dict
+                "dev" (dict "capacityType" "SPOT"      "instanceType" "t3.small"  "min" 1 "desired" 2 "max" 3)
+                "prd" (dict "capacityType" "ON_DEMAND" "instanceType" "t3.medium" "min" 2 "desired" 3 "max" 6) -}}
+            {{- $p := index $presets $xr.spec.mode -}}
+            apiVersion: opentofu.m.upbound.io/v1beta1
+            kind: Workspace
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "eks" }}
+              name: {{ $xr.metadata.name }}-eks
+              namespace: {{ $xr.metadata.namespace }}
+            spec:
+              providerConfigRef:
+                name: aws-default
+                kind: ClusterProviderConfig
+              forProvider:
+                source: Inline
+                vars:
+                  - key: cluster_name
+                    value: "{{ $xr.metadata.name }}"
+                  - key: network_ref
+                    value: "{{ $xr.spec.networkRef }}"
+                  - key: k8s_version
+                    value: "{{ $xr.spec.version }}"
+                  - key: capacity_type
+                    value: "{{ $p.capacityType }}"
+                  - key: instance_type
+                    value: "{{ $p.instanceType }}"
+                  - key: min_size
+                    value: "{{ $p.min }}"
+                  - key: desired_size
+                    value: "{{ $p.desired }}"
+                  - key: max_size
+                    value: "{{ $p.max }}"
+                  - key: user_tags_json
+                    value: '{{ $xr.spec.tags | default dict | toJson }}'
+                module: |
+                  terraform {
+                    backend "s3" {
+                      bucket                   = "platform-eng-tfstate-402938032254"
+                      key                      = "eks/terraform.tfstate"
+                      region                   = "ap-southeast-1"
+                      dynamodb_table           = "platform-eng-tf-locks"
+                      encrypt                  = true
+                      shared_credentials_files = ["aws-creds.ini"]
+                    }
+                  }
+
+                  variable "cluster_name"   { type = string }
+                  variable "network_ref"    { type = string }
+                  variable "k8s_version"    { type = string }
+                  variable "capacity_type"  { type = string }
+                  variable "instance_type"  { type = string }
+                  variable "min_size"       { type = number }
+                  variable "desired_size"   { type = number }
+                  variable "max_size"       { type = number }
+                  variable "user_tags_json" {
+                    type    = string
+                    default = "{}"
+                  }
+
+                  # Discover the network by its tag (no VPC/subnet IDs in the claim).
+                  data "aws_vpc" "selected" {
+                    filter {
+                      name   = "tag:network"
+                      values = [var.network_ref]
+                    }
+                  }
+                  data "aws_subnets" "selected" {
+                    filter {
+                      name   = "vpc-id"
+                      values = [data.aws_vpc.selected.id]
+                    }
+                  }
+
+                  locals {
+                    tags = merge(
+                      jsondecode(var.user_tags_json),
+                      {
+                        "managed-by" = "crossplane"
+                        "layer"      = "eks"
+                        "env"        = var.cluster_name
+                      },
+                    )
+                  }
+
+                  module "eks" {
+                    source  = "terraform-aws-modules/eks/aws"
+                    version = "~> 20.0"
+
+                    cluster_name    = var.cluster_name
+                    cluster_version = var.k8s_version
+
+                    vpc_id     = data.aws_vpc.selected.id
+                    subnet_ids = data.aws_subnets.selected.ids
+
+                    # No per-cluster KMS key (policy keeps kms:* for future use).
+                    create_kms_key            = false
+                    cluster_encryption_config = {}
+
+                    cluster_endpoint_public_access = true
+
+                    eks_managed_node_groups = {
+                      default = {
+                        instance_types = [var.instance_type]
+                        capacity_type  = var.capacity_type
+                        min_size       = var.min_size
+                        desired_size   = var.desired_size
+                        max_size       = var.max_size
+                      }
+                    }
+
+                    tags = local.tags
+                  }
+
+                  output "cluster_name" {
+                    value = module.eks.cluster_name
+                  }
+                  output "cluster_endpoint" {
+                    value = module.eks.cluster_endpoint
+                  }
