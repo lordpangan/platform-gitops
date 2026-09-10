@@ -18,18 +18,20 @@ FUNCS      := $(CURDIR)/test/functions.yaml
 XNETWORK_XRD  := $(CURDIR)/definitions/network/definition.yaml
 XNETWORK_COMP := $(CURDIR)/definitions/network/composition.yaml
 XNETWORK_XR   := $(CURDIR)/test/xnetwork/xr.yaml
-EKS_XRD       := $(CURDIR)/definitions/eks/definition.yaml
-EKS_COMP      := $(CURDIR)/definitions/eks/composition.yaml
-EKS_XR        := $(CURDIR)/test/eks/xr.yaml
+EKS_XRD         := $(CURDIR)/definitions/eks/definition.yaml
+EKS_COMP        := $(CURDIR)/definitions/eks/composition.yaml
+EKS_XR          := $(CURDIR)/test/eks/xr.yaml
+EKS_PRD_XR      := $(CURDIR)/test/eks/xr-prd.yaml
+EKS_OVERRIDE_XR := $(CURDIR)/test/eks/xr-override.yaml
 
 .DEFAULT_GOAL := help
-.PHONY: help test render-smoke test-smoke render-xnetwork test-xnetwork render-eks test-eks
+.PHONY: help test render-smoke test-smoke render-xnetwork test-xnetwork render-eks test-eks test-eks-prd test-eks-override
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
 	  | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
-test: test-smoke test-xnetwork test-eks  ## Run all render tests
+test: test-smoke test-xnetwork test-eks test-eks-prd test-eks-override  ## Run all render tests
 
 # --- harness smoke -----------------------------------------------------------
 
@@ -89,3 +91,26 @@ test-eks:  ## Render the XEKSCluster (dev) claim and assert the composed Workspa
 	check 'value: "1.33"'                   'version default (1.33)'; \
 	check 'value: sandbox'                  'networkRef passed through'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XEKSCluster (dev) renders the expected Workspace"; else echo "FAIL — XEKSCluster render assertions"; exit 1; fi
+
+test-eks-prd:  ## Render the XEKSCluster (prd) claim and assert the prd preset
+	@out="$$($(CROSSPLANE) render $(EKS_PRD_XR) $(EKS_COMP) $(FUNCS) --xrd $(EKS_XRD) 2>/dev/null)"; \
+	fail=0; \
+	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check 'value: ON_DEMAND'   'prd preset: ON_DEMAND capacity'; \
+	check 'value: t3.medium'   'prd preset: t3.medium instance'; \
+	check 'value: "2"'         'prd preset: min 2'; \
+	check 'value: "3"'         'prd preset: desired 3'; \
+	check 'value: "6"'         'prd preset: max 6'; \
+	if [ $$fail -eq 0 ]; then echo "PASS — XEKSCluster (prd) renders the expected preset"; else echo "FAIL — XEKSCluster prd assertions"; exit 1; fi
+
+test-eks-override:  ## Render an override claim and assert explicit nodes.* beat the preset
+	@out="$$($(CROSSPLANE) render $(EKS_OVERRIDE_XR) $(EKS_COMP) $(FUNCS) --xrd $(EKS_XRD) 2>/dev/null)"; \
+	fail=0; \
+	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check 'value: t3.large'    'override wins: instanceType (t3.large)'; \
+	check 'value: ON_DEMAND'   'override wins: capacityType (ON_DEMAND)'; \
+	check 'value: "5"'         'override wins: a count (desired 5)'; \
+	check 'value: "3"'         'un-set field holds: max still dev preset (3)'; \
+	if echo "$$out" | grep -qE 'value: t3.small'; then echo "  FAIL: instance preset leaked (t3.small)"; fail=1; else echo "  ok: instance preset did not leak (no t3.small)"; fi; \
+	if echo "$$out" | grep -qE 'value: SPOT'; then echo "  FAIL: capacity preset leaked (SPOT)"; fail=1; else echo "  ok: capacity preset did not leak (no SPOT)"; fi; \
+	if [ $$fail -eq 0 ]; then echo "PASS — XEKSCluster override beats preset per-field"; else echo "FAIL — XEKSCluster override assertions"; exit 1; fi

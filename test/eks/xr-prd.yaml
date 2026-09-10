@@ -1,0 +1,12 @@
+# Example XEKSCluster claim (prd profile) — proves the prd preset selection.
+apiVersion: platform.meridian.io/v1alpha1
+kind: XEKSCluster
+metadata:
+  name: sandbox
+  namespace: platform
+spec:
+  networkRef: sandbox
+  mode: prd
+  tags:
+    owner: platform-team
+    env: sandbox

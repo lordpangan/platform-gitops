@@ -1,0 +1,16 @@
+# Override claim — mode: dev, but explicit nodes.* fields beat the preset.
+# Covers one field per category (instanceType, capacityType, a count) while the
+# un-overridden count fields (min, max) still fall back to the dev preset.
+apiVersion: platform.meridian.io/v1alpha1
+kind: XEKSCluster
+metadata:
+  name: sandbox
+  namespace: platform
+spec:
+  networkRef: sandbox
+  mode: dev
+  nodes:
+    instanceType: t3.large    # dev preset t3.small — override must win
+    capacityType: ON_DEMAND   # dev preset SPOT      — override must win
+    desired: 5                # dev preset 2         — override must win
+    # min / max left unset → still fall back to dev preset (1 / 3)

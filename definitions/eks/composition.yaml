@@ -1,7 +1,7 @@
 # XEKSCluster Composition — renders one provider-opentofu Workspace that runs the
 # community eks module into an existing network (discovered by the network=<name>
-# tag). Node config is selected from a mode preset. Ticket 04 wires preset
-# SELECTION (dev tested); ticket 05 adds the override-merge (explicit nodes.* win).
+# tag). Node config is selected from a mode preset (dev/prd); any explicitly-set
+# spec.nodes.* field overrides the preset via `| default` (explicit beats preset).
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -47,15 +47,15 @@ spec:
                   - key: k8s_version
                     value: "{{ $xr.spec.version }}"
                   - key: capacity_type
-                    value: "{{ $p.capacityType }}"
+                    value: "{{ $xr.spec.nodes.capacityType | default $p.capacityType }}"
                   - key: instance_type
-                    value: "{{ $p.instanceType }}"
+                    value: "{{ $xr.spec.nodes.instanceType | default $p.instanceType }}"
                   - key: min_size
-                    value: "{{ $p.min }}"
+                    value: "{{ $xr.spec.nodes.min | default $p.min }}"
                   - key: desired_size
-                    value: "{{ $p.desired }}"
+                    value: "{{ $xr.spec.nodes.desired | default $p.desired }}"
                   - key: max_size
-                    value: "{{ $p.max }}"
+                    value: "{{ $xr.spec.nodes.max | default $p.max }}"
                   - key: user_tags_json
                     value: '{{ $xr.spec.tags | default dict | toJson }}'
                 module: |
