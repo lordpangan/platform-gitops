@@ -15,9 +15,11 @@ export DOCKER_HOST
 CROSSPLANE := cd .. && devbox run -- crossplane
 FUNCS      := $(CURDIR)/test/functions.yaml
 
-XNETWORK_XRD  := $(CURDIR)/definitions/network/definition.yaml
-XNETWORK_COMP := $(CURDIR)/definitions/network/composition.yaml
-XNETWORK_XR   := $(CURDIR)/test/xnetwork/xr.yaml
+XNETWORK_XRD         := $(CURDIR)/definitions/network/definition.yaml
+XNETWORK_COMP        := $(CURDIR)/definitions/network/composition.yaml
+XNETWORK_XR          := $(CURDIR)/test/xnetwork/xr.yaml
+XNETWORK_PRD_XR      := $(CURDIR)/test/xnetwork/xr-prd.yaml
+XNETWORK_OVERRIDE_XR := $(CURDIR)/test/xnetwork/xr-override.yaml
 EKS_XRD         := $(CURDIR)/definitions/eks/definition.yaml
 EKS_COMP        := $(CURDIR)/definitions/eks/composition.yaml
 EKS_XR          := $(CURDIR)/test/eks/xr.yaml
@@ -25,13 +27,13 @@ EKS_PRD_XR      := $(CURDIR)/test/eks/xr-prd.yaml
 EKS_OVERRIDE_XR := $(CURDIR)/test/eks/xr-override.yaml
 
 .DEFAULT_GOAL := help
-.PHONY: help test render-smoke test-smoke render-xnetwork test-xnetwork render-eks test-eks test-eks-prd test-eks-override
+.PHONY: help test render-smoke test-smoke render-xnetwork test-xnetwork test-xnetwork-prd test-xnetwork-override render-eks test-eks test-eks-prd test-eks-override
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
 	  | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}'
 
-test: test-smoke test-xnetwork test-eks test-eks-prd test-eks-override  ## Run all render tests
+test: test-smoke test-xnetwork test-xnetwork-prd test-xnetwork-override test-eks test-eks-prd test-eks-override  ## Run all render tests
 
 # --- harness smoke -----------------------------------------------------------
 
@@ -63,10 +65,30 @@ test-xnetwork:  ## Render the XNetwork claim and assert the composed Workspace
 	check 'ap-southeast-1'             'region pinned to Singapore (residency)'; \
 	check 'terraform-aws-modules/vpc'  'community vpc module referenced'; \
 	check 'value: sandbox'             'network_name = claim name'; \
-	check 'value: 10.20.0.0/16'        'cidr passed through'; \
+	check 'value: 192.168.0.0/16'        'cidr passed through'; \
 	check 'value: "2"'                 'azCount passed through'; \
 	check 'managed-by'                 'mandatory platform tags injected'; \
+	check 'value: "false"'             'dev preset: NAT gateway off (cost)'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XNetwork renders the expected Workspace"; else echo "FAIL — XNetwork render assertions"; exit 1; fi
+
+test-xnetwork-prd:  ## Render the XNetwork (prd) claim and assert the prd preset
+	@out="$$($(CROSSPLANE) render $(XNETWORK_PRD_XR) $(XNETWORK_COMP) $(FUNCS) --xrd $(XNETWORK_XRD) 2>/dev/null)"; \
+	fail=0; \
+	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check 'value: 172.16.0.0/12' 'prd preset: cidr 172.16.0.0/12'; \
+	check 'value: "3"'           'prd preset: azCount 3'; \
+	check 'value: "true"'        'prd preset: NAT gateway on'; \
+	if [ $$fail -eq 0 ]; then echo "PASS — XNetwork (prd) renders the expected preset"; else echo "FAIL — XNetwork prd assertions"; exit 1; fi
+
+test-xnetwork-override:  ## Render an override claim and assert explicit spec.* beat the preset
+	@out="$$($(CROSSPLANE) render $(XNETWORK_OVERRIDE_XR) $(XNETWORK_COMP) $(FUNCS) --xrd $(XNETWORK_XRD) 2>/dev/null)"; \
+	fail=0; \
+	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check 'value: 192.168.0.0/16' 'override wins: cidr'; \
+	check 'value: "3"'            'un-set field holds: azCount still prd preset (3)'; \
+	check 'value: "true"'         'platform-fixed: NAT stays on for prd (not overridable)'; \
+	if echo "$$out" | grep -qE 'value: 172.16.0.0/12'; then echo "  FAIL: cidr preset leaked (172.16.0.0/12)"; fail=1; else echo "  ok: cidr preset did not leak"; fi; \
+	if [ $$fail -eq 0 ]; then echo "PASS — XNetwork override beats preset per-field"; else echo "FAIL — XNetwork override assertions"; exit 1; fi
 
 # --- XEKSCluster -------------------------------------------------------------
 

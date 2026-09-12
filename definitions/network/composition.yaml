@@ -22,6 +22,10 @@ spec:
         inline:
           template: |
             {{- $xr := .observed.composite.resource -}}
+            {{- $presets := dict
+                "dev" (dict "cidr" "192.168.0.0/16" "azCount" 2 "natGateway" false)
+                "prd" (dict "cidr" "172.16.0.0/12" "azCount" 3 "natGateway" true) -}}
+            {{- $p := index $presets $xr.spec.mode -}}
             apiVersion: opentofu.m.upbound.io/v1beta1
             kind: Workspace
             metadata:
@@ -37,9 +41,11 @@ spec:
                 source: Inline
                 vars:
                   - key: cidr
-                    value: "{{ $xr.spec.cidr }}"
+                    value: "{{ $xr.spec.cidr | default $p.cidr}}"
                   - key: az_count
-                    value: "{{ $xr.spec.azCount }}"
+                    value: "{{ $xr.spec.azCount | default $p.azCount}}"
+                  - key: enable_nat_gateway
+                    value: "{{$p.natGateway}}"
                   - key: network_name
                     value: "{{ $xr.metadata.name }}"
                   - key: user_tags_json
@@ -56,9 +62,10 @@ spec:
                     }
                   }
 
-                  variable "cidr"           { type = string }
-                  variable "az_count"       { type = number }
-                  variable "network_name"   { type = string }
+                  variable "cidr"               { type = string }
+                  variable "az_count"           { type = number }
+                  variable "network_name"       { type = string }
+                  variable "enable_nat_gateway" { type = bool }
                   variable "user_tags_json" {
                     type    = string
                     default = "{}"
@@ -91,7 +98,7 @@ spec:
                     private_subnets = [for i, az in local.azs : cidrsubnet(var.cidr, 4, i)]
                     public_subnets  = [for i, az in local.azs : cidrsubnet(var.cidr, 4, i + 8)]
 
-                    enable_nat_gateway = false
+                    enable_nat_gateway = var.enable_nat_gateway
 
                     tags = local.tags
                   }

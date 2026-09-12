@@ -1,11 +1,11 @@
-# Example XNetwork claim used by the render test.
+# Example XNetwork claim (prd profile) — proves the prd preset selection.
 apiVersion: platform.meridian.io/v1alpha1
 kind: XNetwork
 metadata:
   name: sandbox
   namespace: platform
 spec:
-  mode: dev
+  mode: prd
   tags:
     owner: platform-team
     env: sandbox
