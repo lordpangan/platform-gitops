@@ -11,6 +11,8 @@ spec:
     repoURL: https://github.com/lordpangan/platform-gitops.git
     path: infra-requests
     targetRevision: main
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:
