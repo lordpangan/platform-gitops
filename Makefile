@@ -56,12 +56,13 @@ render-xnetwork:  ## Render the example XNetwork claim (prints composed output)
 test-xnetwork:  ## Render the XNetwork claim and assert the composed Workspace
 	@out="$$($(CROSSPLANE) render $(XNETWORK_XR) $(XNETWORK_COMP) $(FUNCS) --xrd $(XNETWORK_XRD) 2>/dev/null)"; \
 	fail=0; \
-	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check()  { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	refute() { if echo "$$out" | grep -qE "$$1"; then echo "  FAIL: $$2"; fail=1; else echo "  ok: $$2"; fi; }; \
 	check 'kind: Workspace'             'one Workspace emitted'; \
 	check 'source: Inline'             'inline module'; \
 	check 'kind: ClusterProviderConfig' 'providerConfigRef is the cluster-scoped config'; \
 	check 'name: aws-default'          'providerConfigRef -> aws-default'; \
-	check 'platform/network/sandbox/terraform.tfstate'  'per-layer backend key <namespace>/network/<name>/terraform.tfstate'; \
+	check 'workspace_key_prefix += *"platform"' 'backend prefix = claim namespace'; \
 	check 'ap-southeast-1'             'region pinned to Singapore (residency)'; \
 	check 'terraform-aws-modules/vpc'  'community vpc module referenced'; \
 	check 'value: sandbox'             'network_name = claim name'; \
@@ -69,25 +70,30 @@ test-xnetwork:  ## Render the XNetwork claim and assert the composed Workspace
 	check 'value: "2"'                 'azCount passed through'; \
 	check 'managed-by'                 'mandatory platform tags injected'; \
 	check 'value: "false"'             'dev preset: NAT gateway off (cost)'; \
+	refute '<no value>'                'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XNetwork renders the expected Workspace"; else echo "FAIL — XNetwork render assertions"; exit 1; fi
 
 test-xnetwork-prd:  ## Render the XNetwork (prd) claim and assert the prd preset
 	@out="$$($(CROSSPLANE) render $(XNETWORK_PRD_XR) $(XNETWORK_COMP) $(FUNCS) --xrd $(XNETWORK_XRD) 2>/dev/null)"; \
 	fail=0; \
-	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check()  { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	refute() { if echo "$$out" | grep -qE "$$1"; then echo "  FAIL: $$2"; fail=1; else echo "  ok: $$2"; fi; }; \
 	check 'value: 172.16.0.0/12' 'prd preset: cidr 172.16.0.0/12'; \
 	check 'value: "3"'           'prd preset: azCount 3'; \
 	check 'value: "true"'        'prd preset: NAT gateway on'; \
+	refute '<no value>'          'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XNetwork (prd) renders the expected preset"; else echo "FAIL — XNetwork prd assertions"; exit 1; fi
 
 test-xnetwork-override:  ## Render an override claim and assert explicit spec.* beat the preset
 	@out="$$($(CROSSPLANE) render $(XNETWORK_OVERRIDE_XR) $(XNETWORK_COMP) $(FUNCS) --xrd $(XNETWORK_XRD) 2>/dev/null)"; \
 	fail=0; \
-	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check()  { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	refute() { if echo "$$out" | grep -qE "$$1"; then echo "  FAIL: $$2"; fail=1; else echo "  ok: $$2"; fi; }; \
 	check 'value: 192.168.0.0/16' 'override wins: cidr'; \
 	check 'value: "3"'            'un-set field holds: azCount still prd preset (3)'; \
 	check 'value: "true"'         'platform-fixed: NAT stays on for prd (not overridable)'; \
-	if echo "$$out" | grep -qE 'value: 172.16.0.0/12'; then echo "  FAIL: cidr preset leaked (172.16.0.0/12)"; fail=1; else echo "  ok: cidr preset did not leak"; fi; \
+	refute 'value: 172.16.0.0/12' 'cidr preset did not leak (no 172.16.0.0/12)'; \
+	refute '<no value>'           'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XNetwork override beats preset per-field"; else echo "FAIL — XNetwork override assertions"; exit 1; fi
 
 # --- XEKSCluster -------------------------------------------------------------
@@ -98,11 +104,12 @@ render-eks:  ## Render the example XEKSCluster claim (prints composed output)
 test-eks:  ## Render the XEKSCluster (dev) claim and assert the composed Workspace
 	@out="$$($(CROSSPLANE) render $(EKS_XR) $(EKS_COMP) $(FUNCS) --xrd $(EKS_XRD) 2>/dev/null)"; \
 	fail=0; \
-	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check()  { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	refute() { if echo "$$out" | grep -qE "$$1"; then echo "  FAIL: $$2"; fail=1; else echo "  ok: $$2"; fi; }; \
 	check 'kind: Workspace'                 'one Workspace emitted'; \
 	check 'kind: ClusterProviderConfig'     'providerConfigRef is the cluster-scoped config'; \
 	check 'name: aws-default'               'providerConfigRef -> aws-default'; \
-	check 'platform/eks/sandbox/terraform.tfstate'           'per-layer backend key (<namespace>/eks/<name>/terraform.tfstate)'; \
+	check 'workspace_key_prefix += *"platform"' 'backend prefix = claim namespace'; \
 	check 'ap-southeast-1'                  'region pinned to Singapore (residency)'; \
 	check 'terraform-aws-modules/eks'       'community eks module referenced'; \
 	check 'create_kms_key +=  *false'       'create_kms_key = false'; \
@@ -112,27 +119,32 @@ test-eks:  ## Render the XEKSCluster (dev) claim and assert the composed Workspa
 	check 'value: "2"'                      'dev preset: desired 2'; \
 	check 'value: "1.33"'                   'version default (1.33)'; \
 	check 'value: sandbox'                  'networkRef passed through'; \
+	refute '<no value>'                     'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XEKSCluster (dev) renders the expected Workspace"; else echo "FAIL — XEKSCluster render assertions"; exit 1; fi
 
 test-eks-prd:  ## Render the XEKSCluster (prd) claim and assert the prd preset
 	@out="$$($(CROSSPLANE) render $(EKS_PRD_XR) $(EKS_COMP) $(FUNCS) --xrd $(EKS_XRD) 2>/dev/null)"; \
 	fail=0; \
-	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check()  { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	refute() { if echo "$$out" | grep -qE "$$1"; then echo "  FAIL: $$2"; fail=1; else echo "  ok: $$2"; fi; }; \
 	check 'value: ON_DEMAND'   'prd preset: ON_DEMAND capacity'; \
 	check 'value: t3.medium'   'prd preset: t3.medium instance'; \
 	check 'value: "2"'         'prd preset: min 2'; \
 	check 'value: "3"'         'prd preset: desired 3'; \
 	check 'value: "6"'         'prd preset: max 6'; \
+	refute '<no value>'        'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XEKSCluster (prd) renders the expected preset"; else echo "FAIL — XEKSCluster prd assertions"; exit 1; fi
 
 test-eks-override:  ## Render an override claim and assert explicit nodes.* beat the preset
 	@out="$$($(CROSSPLANE) render $(EKS_OVERRIDE_XR) $(EKS_COMP) $(FUNCS) --xrd $(EKS_XRD) 2>/dev/null)"; \
 	fail=0; \
-	check() { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	check()  { if echo "$$out" | grep -qE "$$1"; then echo "  ok: $$2"; else echo "  FAIL: $$2"; fail=1; fi; }; \
+	refute() { if echo "$$out" | grep -qE "$$1"; then echo "  FAIL: $$2"; fail=1; else echo "  ok: $$2"; fi; }; \
 	check 'value: t3.large'    'override wins: instanceType (t3.large)'; \
 	check 'value: ON_DEMAND'   'override wins: capacityType (ON_DEMAND)'; \
 	check 'value: "5"'         'override wins: a count (desired 5)'; \
 	check 'value: "3"'         'un-set field holds: max still dev preset (3)'; \
-	if echo "$$out" | grep -qE 'value: t3.small'; then echo "  FAIL: instance preset leaked (t3.small)"; fail=1; else echo "  ok: instance preset did not leak (no t3.small)"; fi; \
-	if echo "$$out" | grep -qE 'value: SPOT'; then echo "  FAIL: capacity preset leaked (SPOT)"; fail=1; else echo "  ok: capacity preset did not leak (no SPOT)"; fi; \
+	refute 'value: t3.small'   'instance preset did not leak (no t3.small)'; \
+	refute 'value: SPOT'       'capacity preset did not leak (no SPOT)'; \
+	refute '<no value>'        'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XEKSCluster override beats preset per-field"; else echo "FAIL — XEKSCluster override assertions"; exit 1; fi
