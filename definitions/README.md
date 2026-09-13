@@ -27,10 +27,14 @@ stacking them up.
 
 ### But identity is bound to the claim's name
 
-Each `Workspace` writes to its own state key, derived from the composite at
-template-render time:
+Each `Workspace` writes to its own state path:
 
-    <namespace>/<layer>/<name>/terraform.tfstate
+    <namespace>/<claim name>-<layer>/terraform.tfstate
+    dev/dev-vpc-1-network/terraform.tfstate
+
+The namespace comes from `workspace_key_prefix`, which the Composition sets from
+the claim at template-render time. The middle segment is the OpenTofu workspace
+name, which provider-opentofu derives from the composed `Workspace` resource.
 
 That path *is* the resource's identity. Two consequences:
 
@@ -44,13 +48,13 @@ Anything holding the old ids breaks.
 **Treat claim names as immutable.** To replace infrastructure, do it
 deliberately and knowingly — not as a side effect of tidying up a filename.
 
-### Changing the key scheme is the dangerous edit
+### Changing the state layout is the dangerous edit
 
-Editing the state-key template in a Composition while claims are live is worse
-than a rename. The claims are never deleted, so nothing ever runs `destroy`;
-their `Workspace`s simply start pointing at empty state paths and build a
-*second* set of resources beside the untracked first set. Those originals keep
-running and keep billing with nothing managing them.
+Editing `workspace_key_prefix` or `key` in a Composition while claims are live is
+worse than a rename. The claims are never deleted, so nothing ever runs
+`destroy`; their `Workspace`s simply start pointing at empty state paths and
+build a *second* set of resources beside the untracked first set. Those originals
+keep running and keep billing with nothing managing them.
 
-If the key scheme ever has to change, move the state objects in S3 first, or
-destroy every claim before the change and re-create them after.
+If the layout ever has to change, destroy every claim first and re-create them
+after, or move the state objects in S3 by hand.

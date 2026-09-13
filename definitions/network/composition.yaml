@@ -48,6 +48,10 @@ spec:
                     value: "{{$p.natGateway}}"
                   - key: network_name
                     value: "{{ $xr.metadata.name }}"
+                  - key: tenant
+                    value: "{{ $xr.metadata.namespace }}"
+                  - key: mode
+                    value: "{{ $xr.spec.mode }}"
                   - key: user_tags_json
                     value: '{{ $xr.spec.tags | default dict | toJson }}'
                 module: |
@@ -66,6 +70,8 @@ spec:
                   variable "cidr"               { type = string }
                   variable "az_count"           { type = number }
                   variable "network_name"       { type = string }
+                  variable "tenant"             { type = string }
+                  variable "mode"               { type = string }
                   variable "enable_nat_gateway" { type = bool }
                   variable "user_tags_json" {
                     type    = string
@@ -81,9 +87,11 @@ spec:
                     tags = merge(
                       jsondecode(var.user_tags_json),
                       {
+                        "tenant"     = var.tenant
                         "network"    = var.network_name
                         "managed-by" = "crossplane"
                         "layer"      = "network"
+                        "env"        = var.mode
                       },
                     )
                   }

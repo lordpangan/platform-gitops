@@ -69,6 +69,8 @@ test-xnetwork:  ## Render the XNetwork claim and assert the composed Workspace
 	check 'value: 192.168.0.0/16'        'cidr passed through'; \
 	check 'value: "2"'                 'azCount passed through'; \
 	check 'managed-by'                 'mandatory platform tags injected'; \
+	check '"tenant" += *var.tenant'    'tenant tag = claim namespace'; \
+	check '"env" += *var.mode'         'env tag = mode'; \
 	check 'value: "false"'             'dev preset: NAT gateway off (cost)'; \
 	refute '<no value>'                'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XNetwork renders the expected Workspace"; else echo "FAIL — XNetwork render assertions"; exit 1; fi
@@ -119,6 +121,10 @@ test-eks:  ## Render the XEKSCluster (dev) claim and assert the composed Workspa
 	check 'value: "2"'                      'dev preset: desired 2'; \
 	check 'value: "1.33"'                   'version default (1.33)'; \
 	check 'value: sandbox'                  'networkRef passed through'; \
+	check '"tenant" += *var.tenant'         'tenant tag = claim namespace'; \
+	check '"cluster" += *var.cluster_name'  'cluster identity tag'; \
+	check '"env" += *var.mode'              'env tag = mode'; \
+	refute '"env" += *var.cluster_name'     'env is not the cluster name (old bug)'; \
 	refute '<no value>'                     'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XEKSCluster (dev) renders the expected Workspace"; else echo "FAIL — XEKSCluster render assertions"; exit 1; fi
 

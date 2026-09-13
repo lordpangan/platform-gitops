@@ -44,6 +44,10 @@ spec:
                     value: "{{ $xr.metadata.name }}"
                   - key: network_ref
                     value: "{{ $xr.spec.networkRef }}"
+                  - key: tenant
+                    value: "{{ $xr.metadata.namespace }}"
+                  - key: mode
+                    value: "{{ $xr.spec.mode }}"
                   - key: k8s_version
                     value: "{{ $xr.spec.version }}"
                   - key: capacity_type
@@ -73,6 +77,8 @@ spec:
 
                   variable "cluster_name"   { type = string }
                   variable "network_ref"    { type = string }
+                  variable "tenant"         { type = string }
+                  variable "mode"           { type = string }
                   variable "k8s_version"    { type = string }
                   variable "capacity_type"  { type = string }
                   variable "instance_type"  { type = string }
@@ -102,9 +108,11 @@ spec:
                     tags = merge(
                       jsondecode(var.user_tags_json),
                       {
+                        "tenant"     = var.tenant
                         "managed-by" = "crossplane"
                         "layer"      = "eks"
-                        "env"        = var.cluster_name
+                        "cluster"    = var.cluster_name
+                        "env"        = var.mode
                       },
                     )
                   }
