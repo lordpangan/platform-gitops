@@ -54,7 +54,7 @@ spec:
                   terraform {
                     backend "s3" {
                       bucket                   = "platform-eng-tfstate-402938032254"
-                      key                      = "network/terraform.tfstate"
+                      key                      = "{{ $xr.metadata.namespace }}/network/{{ $xr.metadata.name }}/terraform.tfstate"
                       region                   = "ap-southeast-1"
                       dynamodb_table           = "platform-eng-tf-locks"
                       encrypt                  = true

@@ -61,7 +61,7 @@ test-xnetwork:  ## Render the XNetwork claim and assert the composed Workspace
 	check 'source: Inline'             'inline module'; \
 	check 'kind: ClusterProviderConfig' 'providerConfigRef is the cluster-scoped config'; \
 	check 'name: aws-default'          'providerConfigRef -> aws-default'; \
-	check 'network/terraform.tfstate'  'per-layer backend key (network/)'; \
+	check 'platform/network/sandbox/terraform.tfstate'  'per-layer backend key <namespace>/network/<name>/terraform.tfstate'; \
 	check 'ap-southeast-1'             'region pinned to Singapore (residency)'; \
 	check 'terraform-aws-modules/vpc'  'community vpc module referenced'; \
 	check 'value: sandbox'             'network_name = claim name'; \
@@ -102,7 +102,7 @@ test-eks:  ## Render the XEKSCluster (dev) claim and assert the composed Workspa
 	check 'kind: Workspace'                 'one Workspace emitted'; \
 	check 'kind: ClusterProviderConfig'     'providerConfigRef is the cluster-scoped config'; \
 	check 'name: aws-default'               'providerConfigRef -> aws-default'; \
-	check 'eks/terraform.tfstate'           'per-layer backend key (eks/)'; \
+	check 'platform/eks/sandbox/terraform.tfstate'           'per-layer backend key (<namespace>/eks/<name>/terraform.tfstate)'; \
 	check 'ap-southeast-1'                  'region pinned to Singapore (residency)'; \
 	check 'terraform-aws-modules/eks'       'community eks module referenced'; \
 	check 'create_kms_key +=  *false'       'create_kms_key = false'; \
