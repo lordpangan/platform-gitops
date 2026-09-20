@@ -36,3 +36,5 @@ requirement, not speculation.
 - Transit Gateway / peering and new consumers (Lambda, RDS) become additions to the
   network layer or new consumers of the same tag — never an edit to the EKS cluster.
 - The link is a **tag contract**; renaming the discovery tag is a breaking change.
+  The contract was later extended — discovery now also scopes by `tenant` and
+  selects subnets by `tier`. See [ADR 0007](./0007-network-topology-and-subnet-discovery-by-tier.md).

@@ -71,7 +71,10 @@ test-xnetwork:  ## Render the XNetwork claim and assert the composed Workspace
 	check 'managed-by'                 'mandatory platform tags injected'; \
 	check '"tenant" += *var.tenant'    'tenant tag = claim namespace'; \
 	check '"env" += *var.mode'         'env tag = mode'; \
+	check 'public_subnet_tags  = { tier = "public" }'          'tier public_subnet_tags = public'; \
+	check 'private_subnet_tags = { tier = "private" }'          'tier private_subnet_tags = private'; \
 	check 'value: "false"'             'dev preset: NAT gateway off (cost)'; \
+	check 'value: "true"'              'dev preset: map public IP on launch'; \
 	refute '<no value>'                'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XNetwork renders the expected Workspace"; else echo "FAIL — XNetwork render assertions"; exit 1; fi
 
@@ -83,6 +86,7 @@ test-xnetwork-prd:  ## Render the XNetwork (prd) claim and assert the prd preset
 	check 'value: 172.16.0.0/12' 'prd preset: cidr 172.16.0.0/12'; \
 	check 'value: "3"'           'prd preset: azCount 3'; \
 	check 'value: "true"'        'prd preset: NAT gateway on'; \
+	check 'value: "false"'       'prd preset: map public IP on launch'; \
 	refute '<no value>'          'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XNetwork (prd) renders the expected preset"; else echo "FAIL — XNetwork prd assertions"; exit 1; fi
 
@@ -116,6 +120,7 @@ test-eks:  ## Render the XEKSCluster (dev) claim and assert the composed Workspa
 	check 'terraform-aws-modules/eks'       'community eks module referenced'; \
 	check 'create_kms_key +=  *false'       'create_kms_key = false'; \
 	check 'tag:network'                     'VPC discovered by the network tag'; \
+	check 'tag:tenant'                      'VPC discovery scoped to the tenant'; \
 	check 'value: SPOT'                     'dev preset: SPOT capacity'; \
 	check 'value: t3.small'                 'dev preset: t3.small instance'; \
 	check 'value: "2"'                      'dev preset: desired 2'; \

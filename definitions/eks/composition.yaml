@@ -90,17 +90,27 @@ spec:
                     default = "{}"
                   }
 
-                  # Discover the network by its tag (no VPC/subnet IDs in the claim).
+                  # Discover the network by its tags (no VPC/subnet IDs in the claim).
+                  # Scoped to the tenant too: claim names are not unique across
+                  # namespaces, so network alone can match another tenant's VPC.
                   data "aws_vpc" "selected" {
                     filter {
                       name   = "tag:network"
                       values = [var.network_ref]
+                    }
+                    filter {
+                      name   = "tag:tenant"
+                      values = [var.tenant]
                     }
                   }
                   data "aws_subnets" "selected" {
                     filter {
                       name   = "vpc-id"
                       values = [data.aws_vpc.selected.id]
+                    }
+                    filter {
+                      name   = "tag:tier"
+                      values = ["{{ if eq $xr.spec.mode "dev" }}public{{ else }}private{{ end }}"]
                     }
                   }
 

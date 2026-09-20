@@ -23,8 +23,8 @@ spec:
           template: |
             {{- $xr := .observed.composite.resource -}}
             {{- $presets := dict
-                "dev" (dict "cidr" "192.168.0.0/16" "azCount" 2 "natGateway" false)
-                "prd" (dict "cidr" "172.16.0.0/12" "azCount" 3 "natGateway" true) -}}
+                "dev" (dict "cidr" "192.168.0.0/16" "azCount" 2 "natGateway" false "mapPublicIp" true)
+                "prd" (dict "cidr" "172.16.0.0/12" "azCount" 3 "natGateway" true "mapPublicIp" false) -}}
             {{- $p := index $presets $xr.spec.mode -}}
             apiVersion: opentofu.m.upbound.io/v1beta1
             kind: Workspace
@@ -46,6 +46,8 @@ spec:
                     value: "{{ $xr.spec.azCount | default $p.azCount}}"
                   - key: enable_nat_gateway
                     value: "{{$p.natGateway}}"
+                  - key: map_public_ip
+                    value: "{{$p.mapPublicIp}}"
                   - key: network_name
                     value: "{{ $xr.metadata.name }}"
                   - key: tenant
@@ -73,6 +75,7 @@ spec:
                   variable "tenant"             { type = string }
                   variable "mode"               { type = string }
                   variable "enable_nat_gateway" { type = bool }
+                  variable "map_public_ip"      { type = bool }
                   variable "user_tags_json" {
                     type    = string
                     default = "{}"
@@ -107,6 +110,9 @@ spec:
                     private_subnets = [for i, az in local.azs : cidrsubnet(var.cidr, 4, i)]
                     public_subnets  = [for i, az in local.azs : cidrsubnet(var.cidr, 4, i + 8)]
 
+                    map_public_ip_on_launch = var.map_public_ip
+                    public_subnet_tags  = { tier = "public" }
+                    private_subnet_tags = { tier = "private" }
                     enable_nat_gateway = var.enable_nat_gateway
 
                     tags = local.tags
