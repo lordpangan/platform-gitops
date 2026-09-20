@@ -15,7 +15,7 @@ platform-gitops/
   infra-requests/  # infra claims: XNetwork, XEKSCluster (real $$)       (platform team)
   app-requests/    # app claims: the WebApp claims                       (developers)
   test/            # the offline `crossplane render` harness
-  docs/            # decisions (ADRs) and journal
+  docs/            # decisions (ADRs)
 ```
 
 ## What lives where
@@ -71,8 +71,8 @@ conflicts all surface for the first time at a real apply.
 
 ## Documentation
 
-- **Decisions:** [`docs/adr/`](./docs/adr/)
-- **Journal:** [`docs/journal/`](./docs/journal/)
+Decisions and the alternatives rejected live in [`docs/adr/`](./docs/adr/).
+Each folder's README covers how that folder works.
 
 ## Status
 
