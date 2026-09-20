@@ -118,3 +118,6 @@ spec:
                   output "private_subnet_ids" {
                     value = module.vpc.private_subnets
                   }
+    - step: ready
+      functionRef:
+        name: function-auto-ready

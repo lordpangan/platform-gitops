@@ -57,17 +57,14 @@ make help            # list targets
 
 Each layer is asserted three ways — the `dev` preset, the `prd` preset, and a
 claim that overrides individual fields (which also checks the un-overridden
-preset values don't leak).
+preset values don't leak). The `crossplane` CLI comes from the shared
+[`../devbox.json`](../devbox.json) (`crossplane-cli`, version-pinned).
 
-The Makefile auto-detects the Docker endpoint from your active `docker context`
-(colima or Docker Desktop). The `crossplane` CLI comes from the shared
-[`../devbox.json`](../devbox.json) (`crossplane-cli`, version-pinned). The harness
-under `test/` is the single seam every XRD/Composition is asserted at.
-
-**What these tests cannot catch:** `crossplane render` checks the composed
-`Workspace` — its structure and variables — and never parses the OpenTofu inside
-it. HCL syntax errors, undeclared variables, and module/provider version
-conflicts all surface for the first time at a real apply.
+The harness under `test/` is the single seam every XRD/Composition is asserted
+at. See [`test/README.md`](./test/README.md) for how render works, why
+`test/functions.yaml` exists, and **what these tests cannot catch** — render
+never parses the OpenTofu inside the composed `Workspace`, so HCL errors surface
+for the first time at a real apply.
 
 ## Documentation
 

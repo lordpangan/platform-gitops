@@ -152,3 +152,6 @@ spec:
                   output "cluster_endpoint" {
                     value = module.eks.cluster_endpoint
                   }
+    - step: ready
+      functionRef:
+        name: function-auto-ready

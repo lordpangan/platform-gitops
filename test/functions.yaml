@@ -1,8 +1,25 @@
 # Functions available to `crossplane render`. Shared by every render test.
-# render runs this as a local container (Docker/colima), so it stays offline.
+# render runs these as local containers (Docker/colima), so it stays offline.
+#
+# Nothing is installed from this file. The `functions` Ansible role in
+# platform-control-plane installs them in the cluster. Keep the versions in sync
+# with its group_vars/all.yml, or these tests stop predicting the cluster.
+# See ./README.md.
+
+# Renders a Composition's Go template into the composed resources.
 apiVersion: pkg.crossplane.io/v1
 kind: Function
 metadata:
   name: function-go-templating
 spec:
   package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.12.3
+---
+# Marks the XR Ready once every composed resource reports Ready. Crossplane does
+# not infer XR readiness in a function pipeline, so without this step an XNetwork
+# stays READY=False even when its Workspace is READY=True.
+apiVersion: pkg.crossplane.io/v1
+kind: Function
+metadata:
+  name: function-auto-ready
+spec:
+  package: xpkg.crossplane.io/crossplane-contrib/function-auto-ready:v0.7.0
