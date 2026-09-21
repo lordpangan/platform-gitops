@@ -118,7 +118,7 @@ test-eks:  ## Render the XEKSCluster (dev) claim and assert the composed Workspa
 	check 'workspace_key_prefix += *"platform"' 'backend prefix = claim namespace'; \
 	check 'ap-southeast-1'                  'region pinned to Singapore (residency)'; \
 	check 'terraform-aws-modules/eks'       'community eks module referenced'; \
-	check 'create_kms_key +=  *false'       'create_kms_key = false'; \
+	check 'encryption_config += *null'      'no custom KMS key (AWS-managed encryption)'; \
 	check 'tag:network'                     'VPC discovered by the network tag'; \
 	check 'tag:tenant'                      'VPC discovery scoped to the tenant'; \
 	check 'value: SPOT'                     'dev preset: SPOT capacity'; \
