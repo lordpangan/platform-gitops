@@ -1,0 +1,13 @@
+apiVersion: platform.meridian.io/v1alpha1
+kind: XEKSCluster
+metadata:
+  name: dev-eks
+  namespace: dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  networkRef: dev-vpc-1
+  mode: dev
+  tags:
+    owner: platform-team
+    env: dev

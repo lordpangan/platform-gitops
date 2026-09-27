@@ -1,0 +1,12 @@
+apiVersion: platform.meridian.io/v1alpha1
+kind: XNetwork
+metadata:
+  name: dev-vpc-1
+  namespace: dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  mode: dev
+  tags:
+    owner: platform-team
+    env: dev
