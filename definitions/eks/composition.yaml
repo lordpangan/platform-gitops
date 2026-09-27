@@ -152,6 +152,14 @@ spec:
                       }
                     }
 
+                    addons = {
+                      coredns    = {}
+                      kube-proxy = {}
+                      vpc-cni = {
+                        before_compute = true
+                      }
+                    }
+
                     tags = local.tags
                   }
 
