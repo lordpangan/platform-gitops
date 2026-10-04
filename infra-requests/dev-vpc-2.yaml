@@ -8,7 +8,11 @@ metadata:
     terasky.backstage.io/owner: group:default/guests
     terasky.backstage.io/system: dev
     terasky.backstage.io/source-file-url: >-
-      https://github.com/lordpangan/platform-gitops/blob/main/temp/dev/XNetwork/dev-vpc-2.yaml
+      https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/dev-vpc-2.yaml
   name: dev-vpc-2
   namespace: dev
-spec: {}
+spec: 
+  mode: dev
+  tags:
+    owner: platform-team
+    env: dev
