@@ -5,6 +5,7 @@ metadata:
   namespace: dev
   annotations:
     argocd.argoproj.io/sync-wave: "1"
+    terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/dev-vpc-1.yaml
 spec:
   mode: dev
   tags:
