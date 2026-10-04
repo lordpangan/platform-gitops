@@ -11,3 +11,4 @@ spec:
   tags:
     owner: platform-team
     env: dev
+    Test: adding-tags
