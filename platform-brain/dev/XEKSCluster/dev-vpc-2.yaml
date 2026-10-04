@@ -1,0 +1,18 @@
+apiVersion: platform.meridian.io/v1alpha1
+kind: XEKSCluster
+metadata:
+  annotations:
+    terasky.backstage.io/source-info: >-
+      {"pushToGit":true,"gitBranch":"main","gitRepo":"github.com?owner=lordpangan&repo=platform-gitops","gitLayout":"cluster-scoped","basePath":"platform-brain/dev/XEKSCluster"}
+    terasky.backstage.io/add-to-catalog: 'true'
+    terasky.backstage.io/owner: group:default/guests
+    terasky.backstage.io/system: dev
+    terasky.backstage.io/source-file-url: >-
+      https://github.com/lordpangan/platform-gitops/blob/main/platform-brain/dev/XEKSCluster/dev-vpc-2.yaml
+  name: dev-vpc-2
+  namespace: dev
+spec:
+  mode: dev
+  networkRef: dev-vpc-2
+  crossplane:
+    compositionUpdatePolicy: Automatic
