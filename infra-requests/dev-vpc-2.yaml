@@ -1,18 +1,12 @@
 apiVersion: platform.meridian.io/v1alpha1
 kind: XNetwork
 metadata:
-  annotations:
-    terasky.backstage.io/source-info: >-
-      {"pushToGit":true,"gitBranch":"main","gitRepo":"github.com?owner=lordpangan&repo=platform-gitops","gitLayout":"custom","basePath":"infra-requests"}
-    terasky.backstage.io/add-to-catalog: 'true'
-    terasky.backstage.io/owner: group:default/guests
-    terasky.backstage.io/system: dev
-    terasky.backstage.io/source-file-url: >-
-      https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/dev-vpc-2.yaml
   name: dev-vpc-2
   namespace: dev
-spec: 
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    terasky.backstage.io/owner: group:default/guests
+    terasky.backstage.io/system: dev
+    terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/dev-vpc-2.yaml
+spec:
   mode: dev
-  tags:
-    owner: platform-team
-    env: dev
