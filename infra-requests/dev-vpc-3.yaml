@@ -10,5 +10,5 @@ metadata:
     terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/dev-vpc-3.yaml
 spec:
   mode: dev
-  azCount: -5
+  azCount: ""
   cidr: 172.16.0.0/12
