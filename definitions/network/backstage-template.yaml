@@ -1,0 +1,88 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-xnetwork
+  title: Create a Network (XNetwork)
+  description: Request a VPC. Opens a PR that adds infra-requests/<name>.yaml.
+  tags: [crossplane, network]
+spec:
+  owner: group:default/guests
+  type: infrastructure
+
+  parameters:
+    - title: Network
+      required: [name, namespace, spec]
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Lowercase letters, numbers and dashes. Also the file name.
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+        namespace:
+          title: Namespace (tenant)
+          type: string
+          enum: [dev]
+          default: dev
+        spec:
+          title: Settings
+          type: object
+          required: [mode]
+          properties:
+            mode:
+              title: Mode
+              type: string
+              enum: [dev, prd]
+              description: Preset for the network config.
+            cidr:
+              title: CIDR (optional)
+              type: string
+              description: Leave empty for the preset.
+              pattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$'
+            azCount:
+              title: AZ count (optional)
+              type: integer
+              minimum: 2
+            tags:
+              title: Tags (optional)
+              type: object
+              additionalProperties:
+                type: string
+
+  steps:
+    - id: build
+      name: Build the claim
+      action: roadiehq:utils:serialize:yaml
+      input:
+        data:
+          apiVersion: platform.meridian.io/v1alpha1
+          kind: XNetwork
+          metadata:
+            name: ${{ parameters.name }}
+            namespace: ${{ parameters.namespace }}
+            annotations:
+              argocd.argoproj.io/sync-wave: "1"
+              terasky.backstage.io/owner: group:default/guests
+              terasky.backstage.io/system: ${{ parameters.namespace }}
+              terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/${{ parameters.name }}.yaml
+          spec: ${{ parameters.spec }}
+
+    - id: write
+      name: Write the file
+      action: roadiehq:utils:fs:write
+      input:
+        path: infra-requests/${{ parameters.name }}.yaml
+        content: ${{ steps.build.output.serialized }}
+
+    - id: pr
+      name: Open the PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=lordpangan&repo=platform-gitops
+        branchName: backstage/create-${{ parameters.namespace }}-${{ parameters.name }}
+        title: Create XNetwork ${{ parameters.namespace }}/${{ parameters.name }}
+        description: Requested from Backstage.
+
+  output:
+    links:
+      - title: Pull request
+        url: ${{ steps.pr.output.remoteUrl }}
