@@ -13,6 +13,7 @@ spec:
     targetRevision: main
     directory:
       recurse: true
+      exclude: '*/backstage-template.yaml'
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:
