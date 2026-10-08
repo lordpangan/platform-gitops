@@ -86,3 +86,47 @@ spec:
     links:
       - title: Pull request
         url: ${{ steps.pr.output.remoteUrl }}
+---
+# Schema for the edit form (Scaffolder Content → update). The updater looks up
+# an API named <kind>-<group>--<version> and reads
+# components.schemas.Resource.properties.spec. Copy of the spec in
+# definition.yaml — change both together.
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: xnetwork-platform.meridian.io--v1alpha1
+  title: XNetwork API (v1alpha1)
+  tags: [crossplane]
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:default/guests
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: XNetwork
+      version: v1alpha1
+    paths: {}
+    components:
+      schemas:
+        Resource:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [mode]
+              properties:
+                mode:
+                  type: string
+                  enum: [dev, prd]
+                  description: Preset for the network config.
+                cidr:
+                  type: string
+                  description: VPC CIDR block. Leave empty for the preset.
+                azCount:
+                  type: integer
+                  minimum: 2
+                tags:
+                  type: object
+                  additionalProperties:
+                    type: string
