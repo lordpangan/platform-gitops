@@ -30,12 +30,31 @@ need them.
 | `1` | `XNetwork` | The VPC the cluster is discovered into |
 | `2` | `XEKSCluster` | Finds its VPC by the `network=<name>` tag |
 
-Waves order the *apply*, not readiness: ArgoCD has no health check registered for
-these custom kinds, so it reports them Healthy the moment they are applied rather
-than when the cloud resources exist. A later wave can therefore start before an
-earlier one has finished building. Crossplane retries until it converges, so this
-is noisy rather than fatal — expect the EKS `Workspace` to fail its VPC lookup a
-few times on a cold build.
+A Lua health check (control-plane ADR 0008) keeps each XR Progressing until it
+is `READY=True`, so a later wave waits until the earlier one's cloud resources
+exist.
 
 **Claim names are immutable in practice.** Renaming one is a destroy-and-recreate,
 not a rename — see [`../definitions/README.md`](../definitions/README.md).
+
+**Some fields can't change after creation.** The API server rejects these
+updates (CEL rules in the XRD), because each one would replace or remove live
+infrastructure:
+
+| `XNetwork` field | Rule |
+|---|---|
+| `mode` | can't change: it picks the preset, and so the CIDR |
+| `cidr` | can be added once (pinning), then never changed or removed |
+| `azCount` | can only grow |
+
+The error shows up in the ArgoCD sync, e.g. `cidr can be set once, then never
+changed or removed`. To get a different CIDR, request a new network.
+
+## How to request
+
+- **Backstage:** Create → "Create a Network (XNetwork)". It opens a PR that
+  adds `<name>.yaml` here, with the sync-wave and the `source-file-url`
+  annotation already set. There's no EKS form yet.
+- **By hand:** copy an existing claim. Keep the `argocd.argoproj.io/sync-wave`
+  annotation, and add `terasky.backstage.io/source-file-url` if you want to
+  edit it from Backstage later.

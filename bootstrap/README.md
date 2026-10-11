@@ -47,8 +47,17 @@ how an accidental `git rm` becomes an outage.
 
 Sync waves order the *apply*. They do not wait for cloud resources to exist.
 
-ArgoCD has no health check registered for custom kinds like `XNetwork`, so it
-marks them Healthy the moment they are applied. The next wave then starts, even
-though the VPC may still be building. Crossplane retries until things converge,
-so this is noisy rather than broken — but expect errors in the logs on a cold
-build.
+ArgoCD has a Lua health check for `XNetwork` and `XEKSCluster` (control-plane
+ADR 0008). It reports an XR as Progressing until the XR is `READY=True`, so the
+next wave waits for the cloud resources, not only for the apply.
+
+Healthy here still only describes the objects ArgoCD applied. A change below
+them can fail while the app stays green: a Composition edit that rolls out to
+live XRs, or a stuck OpenTofu run (learning record 0009). Check the
+Workspace's `Synced` condition, not only the app.
+
+## Files ArgoCD skips
+
+`definitions.yaml` has `exclude: '*/backstage-template.yaml'`. Those files are
+Backstage forms, not Kubernetes objects. Backstage loads them from Git, and
+ArgoCD must not try to apply them.

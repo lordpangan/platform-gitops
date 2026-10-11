@@ -12,6 +12,7 @@ Repo-specific decisions live here. System-wide decisions live in
 | [0005](./0005-claim-identity-namespace-and-state-key.md) | Claims live in tenant namespaces; state keys follow the claim | Accepted |
 | [0006](./0006-mode-preset-pattern-for-infra-xrds.md) | Mode presets with per-field overrides as the standard infra XRD shape | Accepted |
 | [0007](./0007-network-topology-and-subnet-discovery-by-tier.md) | Network topology by mode, and subnet discovery by tier | Accepted |
+| [0008](./0008-guard-replace-forcing-fields.md) | Replace-forcing fields are immutable (CEL); presets are append-only | Accepted |
 
 > The engine, remote-state, IAM, and GitOps-bootstrap decisions these build on are
 > system-wide and live in the

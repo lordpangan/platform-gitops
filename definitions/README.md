@@ -58,3 +58,34 @@ keep running and keep billing with nothing managing them.
 
 If the layout ever has to change, destroy every claim first and re-create them
 after, or move the state objects in S3 by hand.
+
+## Changes that replace infrastructure
+
+### Editing a preset changes every XR that uses it
+
+A claim without its own `cidr` (or `azCount`, ...) follows the mode's preset in
+the Composition. Compositions use `compositionUpdatePolicy: Automatic`, so a
+preset edit reaches **every** such XR at once, the moment ArgoCD syncs it.
+
+Changing the `dev` CIDR preset did exactly that and replaced two live VPCs
+halfway (learning record 0009). The VPC module can't change a VPC's CIDR: it
+plans a replace, then deadlocks on the attached Internet Gateway until the run
+is killed.
+
+**Treat presets as append-only.** Need different values? Add a new mode. Any
+Composition edit, even a comment, makes a new CompositionRevision and rolls out
+to all XRs. That's harmless only if the rendered output stays the same.
+
+### The API blocks replace-forcing edits on claims
+
+CEL transition rules in each XRD reject updates that would replace or remove
+live infrastructure (see [`../infra-requests/README.md`](../infra-requests/README.md)
+for the list). They guard the **claim**. They can't guard the presets.
+
+## Backstage forms
+
+Each API folder can hold a `backstage-template.yaml`. ArgoCD skips it; Backstage
+loads it. It holds two documents: the create form (`kind: Template`) and the
+schema the edit form reads (`kind: API`). The `kind: API` schema is a copy of
+the XRD's `spec`. **Change it together with `definition.yaml`**, or the edit
+form will show stale fields.
