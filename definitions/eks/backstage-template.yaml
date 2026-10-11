@@ -1,0 +1,160 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-xekscluster
+  title: Create an EKS cluster (XEKSCluster)
+  description: Request an EKS cluster in an existing network. Opens a PR that adds infra-requests/<name>.yaml.
+  tags: [crossplane, eks]
+spec:
+  owner: group:default/guests
+  type: infrastructure
+
+  parameters:
+    - title: Cluster
+      required: [name, namespace, networkRef, spec]
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Lowercase letters, numbers and dashes. Also the file name.
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+        namespace:
+          title: Namespace (tenant)
+          type: string
+          enum: [dev]
+          default: dev
+        networkRef:
+          title: Network
+          type: string
+          description: The XNetwork to deploy into.
+          ui:field: EntityPicker
+          ui:options:
+            allowArbitraryValues: false
+            catalogFilter:
+              - kind: Component
+                metadata.annotations.terasky.backstage.io/composite-kind: XNetwork
+        spec:
+          title: Settings
+          type: object
+          required: [mode]
+          properties:
+            mode:
+              description: Node preset. dev = SPOT/t3.small/1-2-3, prd = ON_DEMAND/t3.medium/2-3-6.
+            version:
+              title: Kubernetes version
+              type: string
+              enum: ["1.31", "1.32", "1.33"]
+              default: "1.33"
+            nodes:
+              title: Node overrides (optional)
+              type: object
+              description: Leave empty to use the mode preset.
+              properties:
+                instanceType:
+                  type: string
+                  enum: [t3.small, t3.medium, t3.large]
+                capacityType:
+                  type: string
+                  enum: [SPOT, ON_DEMAND]
+                min:     { type: integer, minimum: 1 }
+                desired: { type: integer, minimum: 1 }
+                max:     { type: integer, minimum: 1 }
+            tags:
+              title: Tags (optional)
+              type: object
+              additionalProperties:
+                type: string
+
+  steps:
+    - id: build
+      name: Build the claim
+      action: roadiehq:utils:serialize:yaml
+      input:
+        data:
+          apiVersion: platform.meridian.io/v1alpha1
+          kind: XEKSCluster
+          metadata:
+            name: ${{ parameters.name }}
+            namespace: ${{ parameters.namespace }}
+            annotations:
+              argocd.argoproj.io/sync-wave: "2"
+              # Placeholder until tenant ownership (ROADMAP Phase 8): Kyverno will stamp this; then delete.
+              terasky.backstage.io/owner: group:default/guests
+              terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/${{ parameters.name }}.yaml
+          spec:
+            networkRef: ${{ parameters.networkRef | parseEntityRef | pick('name') }}
+            mode: ${{ parameters.spec.mode }}
+            version: ${{ parameters.spec.version }}
+            nodes: ${{ parameters.spec.nodes }}
+            tags: ${{ parameters.spec.tags }}
+
+    - id: write
+      name: Write the file
+      action: roadiehq:utils:fs:write
+      input:
+        path: infra-requests/${{ parameters.name }}.yaml
+        content: ${{ steps.build.output.serialized }}
+
+    - id: pr
+      name: Open the PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=lordpangan&repo=platform-gitops
+        branchName: backstage/create-${{ parameters.namespace }}-${{ parameters.name }}
+        title: Create XEKSCluster ${{ parameters.namespace }}/${{ parameters.name }}
+        description: Requested from Backstage. Merging creates an EKS cluster (costs money).
+
+  output:
+    links:
+      - title: Pull request
+        url: ${{ steps.pr.output.remoteUrl }}
+---
+# Schema for the edit form (update-claim). Copy of the spec in definition.yaml —
+# change both together: update-claim replaces the whole spec, so a field missing
+# here is dropped on the next edit.
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: xekscluster-platform.meridian.io--v1alpha1
+  title: XEKSCluster API (v1alpha1)
+  tags: [crossplane]
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:default/guests
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: XEKSCluster
+      version: v1alpha1
+    paths: {}
+    components:
+      schemas:
+        Resource:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [networkRef, mode]
+              properties:
+                networkRef:
+                  type: string
+                  description: Name of the XNetwork to deploy into.
+                mode:
+                  type: string
+                  enum: [dev, prd]
+                version:
+                  type: string
+                  enum: ["1.31", "1.32", "1.33"]
+                nodes:
+                  type: object
+                  properties:
+                    instanceType: { type: string, enum: [t3.small, t3.medium, t3.large] }
+                    capacityType: { type: string, enum: [SPOT, ON_DEMAND] }
+                    min:     { type: integer, minimum: 1 }
+                    desired: { type: integer, minimum: 1 }
+                    max:     { type: integer, minimum: 1 }
+                tags:
+                  type: object
+                  additionalProperties:
+                    type: string
