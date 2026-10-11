@@ -11,3 +11,5 @@ spec:
   mode: dev
   azCount: 3
   cidr: 192.168.0.0/16
+  tags:
+    test: wowoow
