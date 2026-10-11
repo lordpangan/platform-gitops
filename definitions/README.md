@@ -87,5 +87,10 @@ for the list). They guard the **claim**. They can't guard the presets.
 Each API folder can hold a `backstage-template.yaml`. ArgoCD skips it; Backstage
 loads it. It holds two documents: the create form (`kind: Template`) and the
 schema the edit form reads (`kind: API`). The `kind: API` schema is a copy of
-the XRD's `spec`. **Change it together with `definition.yaml`**, or the edit
-form will show stale fields.
+the XRD's `spec`. **Change it together with `definition.yaml`.** The edit
+template replaces the whole `spec`, so a field missing from the copy is
+dropped on the next edit.
+
+`_shared/backstage-template.yaml` is the edit template (`update-claim`) for
+every kind. It isn't an API, so it has no XRD next to it. See control-plane
+ADR 0010.
