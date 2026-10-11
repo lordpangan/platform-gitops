@@ -11,7 +11,7 @@ spec:
 
   parameters:
     - title: Cluster
-      required: [name, namespace, networkRef, spec]
+      required: [name, namespace, spec]
       properties:
         name:
           title: Name
@@ -23,20 +23,10 @@ spec:
           type: string
           enum: [dev]
           default: dev
-        networkRef:
-          title: Network
-          type: string
-          description: The XNetwork to deploy into.
-          ui:field: EntityPicker
-          ui:options:
-            allowArbitraryValues: false
-            catalogFilter:
-              - kind: Component
-                metadata.annotations.terasky.backstage.io/composite-kind: XNetwork
         spec:
           title: Settings
           type: object
-          required: [mode]
+          required: [mode,networkRef]
           properties:
             mode:
               title: Mode
@@ -48,6 +38,16 @@ spec:
               type: string
               enum: ["1.31", "1.32", "1.33"]
               default: "1.33"
+            networkRef:
+              title: Network
+              type: string
+              description: The XNetwork to deploy into.
+              ui:field: EntityPicker
+              ui:options:
+                allowArbitraryValues: false
+                catalogFilter:
+                  - kind: Component
+                    metadata.annotations.terasky.backstage.io/composite-kind: XNetwork
             nodes:
               title: Node overrides (optional)
               type: object
@@ -85,7 +85,7 @@ spec:
               terasky.backstage.io/owner: group:default/guests
               terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/${{ parameters.name }}.yaml
           spec:
-            networkRef: ${{ parameters.networkRef | parseEntityRef | pick('name') }}
+            networkRef: ${{ parameters.spec.networkRef | parseEntityRef | pick('name') }}
             mode: ${{ parameters.spec.mode }}
             version: ${{ parameters.spec.version }}
             nodes: ${{ parameters.spec.nodes }}
