@@ -1,0 +1,114 @@
+# Edit flow for any claim (XNetwork, XEKSCluster, ...), shown in the entity's
+# "Scaffolder Content" tab (label target: component). Copy of upstream
+# vrabbi-backstage/gitops-updater-template with three changes:
+#   1. spec is REPLACED, not deep-merged, so removed fields really go away
+#   2. "" values and empty objects are dropped (the form writes "" for a cleared field)
+#   3. the branch name is unique per run, so a stale PR doesn't block new edits
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: update-claim
+  title: Update claim (replace spec)
+  description: Edit a claim's spec. Opens a PR that replaces spec in its file in Git.
+  labels:
+    target: component
+spec:
+  owner: group:default/guests
+  type: infrastructure
+
+  parameters:
+    - title: Entity
+      required: [entity]
+      properties:
+        entity:
+          title: Entity
+          type: string
+          ui:field: EntityPicker
+          ui:options:
+            catalogFilter:
+              - kind: Component
+    - title: Spec
+      required: [gitOpsManifestUpdater]
+      properties:
+        gitOpsManifestUpdater:
+          title: Spec
+          type: object
+          ui:field: GitOpsManifestUpdater
+
+  steps:
+    - id: get-entity
+      name: Get entity
+      action: catalog:fetch
+      input:
+        entityRef: ${{ parameters.entity }}
+
+    - id: source-url
+      name: Find the claim file
+      action: roadiehq:utils:jsonata
+      input:
+        data: ${{ steps['get-entity'].output.entity.metadata.annotations }}
+        expression: |
+          $string($lookup($, "terasky.backstage.io/source-file-url"))
+            ? $lookup($, "terasky.backstage.io/source-file-url")
+            : $error("The entity has no terasky.backstage.io/source-file-url annotation")
+
+    - id: parse-url
+      name: Parse the URL
+      action: roadiehq:utils:jsonata
+      input:
+        data: ${{ steps['source-url'].output.result }}
+        expression: |
+          {
+            "owner":  $split($, "/")[3],
+            "repo":   $split($, "/")[4],
+            "branch": $split($, "/")[6],
+            "path":   $join($filter($split($, "/"), function($v, $i) { $i >= 7 }), "/"),
+            "pr":     "backstage-update-" & $replace($join($filter($split($, "/"), function($v, $i) { $i >= 7 }), "/"), /[^a-z0-9]+/, "-") & "-" & $string($millis())
+          }
+
+    - id: fetch
+      name: Download the current file
+      action: fetch:plain:file
+      input:
+        url: ${{ steps['source-url'].output.result }}
+        targetPath: ${{ steps['parse-url'].output.result.path }}
+
+    - id: replace-spec
+      name: Replace spec (drop empty values)
+      action: roadiehq:utils:jsonata:yaml:transform
+      input:
+        path: ${{ steps['parse-url'].output.result.path }}
+        expression: |
+          (
+            $clean := function($v) {
+              $type($v) = "object"
+                ? $merge([{}, $each($v, function($x, $k) {
+                    ( $c := $clean($x);
+                      ($c = "" or $c = null or ($type($c) = "object" and $count($keys($c)) = 0)) ? {} : {$k: $c} )
+                  })])
+                : $v
+            };
+            $merge([$, {"spec": $clean(${{ parameters.gitOpsManifestUpdater | dump }})}])
+          )
+
+    - id: write
+      name: Write the file
+      action: roadiehq:utils:fs:write
+      input:
+        path: ${{ steps['parse-url'].output.result.path }}
+        content: ${{ steps['replace-spec'].output.result }}
+
+    - id: pr
+      name: Open the PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=${{ steps['parse-url'].output.result.owner }}&repo=${{ steps['parse-url'].output.result.repo }}
+        branchName: ${{ steps['parse-url'].output.result.pr }}
+        targetBranchName: ${{ steps['parse-url'].output.result.branch }}
+        title: Update ${{ steps['get-entity'].output.entity.metadata.name }}
+        description: Spec replaced from Backstage (update-claim).
+
+  output:
+    links:
+      - title: Pull request
+        url: ${{ steps.pr.output.remoteUrl }}
