@@ -23,8 +23,8 @@ spec:
           template: |
             {{- $xr := .observed.composite.resource -}}
             {{- $presets := dict
-                "dev" (dict "cidr" "192.168.0.0/16" "azCount" 2 "natGateway" false "mapPublicIp" true)
-                "prd" (dict "cidr" "172.16.0.0/12" "azCount" 3 "natGateway" true "mapPublicIp" false) -}}
+                "dev" (dict "cidr" "192.168.0.0/20" "azCount" 2 "natGateway" false "mapPublicIp" true)
+                "prd" (dict "cidr" "172.16.0.0/16" "azCount" 3 "natGateway" true "mapPublicIp" false) -}}
             {{- $p := index $presets $xr.spec.mode -}}
             apiVersion: opentofu.m.upbound.io/v1beta1
             kind: Workspace
