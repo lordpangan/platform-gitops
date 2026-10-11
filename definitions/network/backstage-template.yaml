@@ -62,7 +62,6 @@ spec:
             annotations:
               argocd.argoproj.io/sync-wave: "1"
               terasky.backstage.io/owner: group:default/guests
-              terasky.backstage.io/system: ${{ parameters.namespace }}
               terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/${{ parameters.name }}.yaml
           spec: ${{ parameters.spec }}
 
