@@ -22,6 +22,14 @@ spec:
         inline:
           template: |
             {{- $xr := .observed.composite.resource -}}
+            {{- /*
+              Never change a preset's cidr or shrink its azCount. Every XR
+              without its own spec.cidr follows the preset, and compositionUpdatePolicy
+              Automatic rolls the change out to all of them. A cidr change replaces
+              the VPC, which deadlocks on the attached Internet Gateway (see
+              learning record 0009). The XRD's CEL rules guard the claim, not
+              this. Need different values? Add a new mode.
+            */ -}}
             {{- $presets := dict
                 "dev" (dict "cidr" "192.168.0.0/20" "azCount" 2 "natGateway" false "mapPublicIp" true)
                 "prd" (dict "cidr" "172.16.0.0/16" "azCount" 3 "natGateway" true "mapPublicIp" false) -}}
