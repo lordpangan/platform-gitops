@@ -52,9 +52,10 @@ changed or removed`. To get a different CIDR, request a new network.
 
 ## How to request
 
-- **Backstage:** Create → "Create a Network (XNetwork)". It opens a PR that
-  adds `<name>.yaml` here, with the sync-wave and the `source-file-url`
-  annotation already set. There's no EKS form yet.
+- **Backstage:** Create → "Create a Network (XNetwork)" or "Create an EKS
+  cluster (XEKSCluster)". Each opens a PR that adds `<name>.yaml` here, with
+  the sync-wave and the `source-file-url` annotation already set. The EKS form
+  picks its network from the existing XNetworks.
 - **By hand:** copy an existing claim. Keep the `argocd.argoproj.io/sync-wave`
   annotation, and add `terasky.backstage.io/source-file-url` if you want to
   edit it from Backstage later.
