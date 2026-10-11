@@ -19,6 +19,13 @@ spec:
           type: object
           properties:
             spec:
+              x-kubernetes-validations:
+                - rule: "self.mode == oldSelf.mode"
+                  message: "mode is immutable (it selects the CIDR preset)"
+                - rule: "!has(oldSelf.cidr) || (has(self.cidr) && self.cidr == oldSelf.cidr)"
+                  message: "cidr can be set once, then never changed or removed"
+                - rule: "!has(oldSelf.azCount) || (has(self.azCount) && self.azCount >= oldSelf.azCount)"
+                  message: "azCount can only grow"
               type: object
               required:
                 - mode
