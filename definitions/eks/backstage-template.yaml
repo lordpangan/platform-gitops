@@ -39,6 +39,9 @@ spec:
           required: [mode]
           properties:
             mode:
+              title: Mode
+              type: string
+              enum: [dev, prd]
               description: Node preset. dev = SPOT/t3.small/1-2-3, prd = ON_DEMAND/t3.medium/2-3-6.
             version:
               title: Kubernetes version
