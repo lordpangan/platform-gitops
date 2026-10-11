@@ -8,6 +8,7 @@ metadata:
     terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/dev-vpc-1.yaml
 spec:
   mode: dev
+  cidr: 192.168.0.0/16
   tags:
     owner: platform-team
     env: dev
