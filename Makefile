@@ -70,7 +70,7 @@ test-xnetwork:  ## Render the XNetwork claim and assert the composed Workspace
 	check 'value: "2"'                 'azCount passed through'; \
 	check 'managed-by'                 'mandatory platform tags injected'; \
 	check '"tenant" += *var.tenant'    'tenant tag = claim namespace'; \
-	check '"env" += *var.mode'         'env tag = mode'; \
+	check '"mode" += *var.mode'        'mode tag = mode (env comes from the claim tags)'; \
 	check 'public_subnet_tags  = { tier = "public" }'          'tier public_subnet_tags = public'; \
 	check 'private_subnet_tags = { tier = "private" }'          'tier private_subnet_tags = private'; \
 	check 'value: "false"'             'dev preset: NAT gateway off (cost)'; \

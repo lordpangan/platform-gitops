@@ -6,6 +6,11 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: xnetwork
+  labels:
+    # The release of this Composition, in semver. Bump it on every change
+    # (ADR 0010). Each new revision copies it, so a pinned claim's revision
+    # shows which release it runs.
+    release: "0.1.1"
 spec:
   compositeTypeRef:
     apiVersion: platform.meridian.io/v1alpha1
@@ -102,7 +107,7 @@ spec:
                         "network"    = var.network_name
                         "managed-by" = "crossplane"
                         "layer"      = "network"
-                        "env"        = var.mode
+                        "mode"       = var.mode
                       },
                     )
                   }

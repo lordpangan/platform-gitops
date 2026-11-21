@@ -113,6 +113,40 @@ If the complying claim is untouched and the failure is clear and early, use
 Route A for tightening, renames and removals, and keep Route B for a full
 redesign. If not, Route B is the route.
 
+### 5. Each Composition carries a semver release label.
+
+Example:
+
+```yaml
+metadata:
+  name: xnetwork
+  labels:
+    release: "0.1.1"
+```
+
+Crossplane names a revision from a hash of its content, such as
+`xnetwork-d6f24a7`. People can't read that. Each new revision copies the
+Composition's labels, so `kubectl get compositionrevisions -L release` shows
+the release next to the hash.
+
+Every change to a Composition bumps `release`:
+
+| Change | Bump | Example |
+|---|---|---|
+| Breaking: it replaces infrastructure, or removes or renames something a claim relies on | major | `1.4.2` to `2.0.0` |
+| A new feature that existing claims don't need to change for | minor | `1.4.2` to `1.5.0` |
+| A fix or a small update | patch | `1.4.2` to `1.4.3` |
+
+While the API is `v1alpha1` or `v1beta1`, the major stays `0`. This follows
+semver: a `0.y.z` release is not yet stable. During `0.y.z`, a breaking change
+bumps the minor.
+
+Claims still pin by revision name, not by this label (ADR 0009). The hash is
+exact. A label can be wrong if someone forgets to bump it. A promotion PR shows
+both, for example `0.1.0 (xnetwork-d6f24a7) to 0.1.1 (xnetwork-1a2b3c4)`.
+
+The first label is `0.1.1`. The revisions before it have no label.
+
 ## Alternatives considered
 
 - **Serve `v1alpha2` beside `v1alpha1`, and treat a claim's `apiVersion` as its
@@ -145,8 +179,7 @@ redesign. If not, Route B is the route.
 ## To settle before building
 
 - **Run the test** in Decision 4, and write the chosen route into this ADR.
-- **A semver release number per API** (for example "XNetwork 0.5.0", in a
-  changelog and on promotion PRs), to label changes that `apiVersion` does not
-  show. Raised, not decided.
+- **A CI check that the `release` label changed** whenever a Composition's
+  content changed.
 - **Which tool runs the CI check** (the render tests in `test/` are the
   starting point).
