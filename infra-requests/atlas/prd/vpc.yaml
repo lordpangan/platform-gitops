@@ -1,0 +1,20 @@
+apiVersion: platform.meridian.io/v1alpha1
+kind: XNetwork
+metadata:
+  name: prd-vpc
+  namespace: atlas
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/atlas/prd/vpc.yaml
+spec:
+  # prd is always pinned to a Composition revision (ADR 0009). Promoting moves the pin.
+  crossplane:
+    compositionUpdatePolicy: Manual
+    compositionRevisionRef:
+      name: xnetwork-d6f24a7
+  # The environment is prd (the folder). mode is only the size: dev saves cost.
+  mode: dev
+  cidr: 192.168.0.0/16
+  tags:
+    owner: atlas
+    env: prd

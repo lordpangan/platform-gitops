@@ -22,6 +22,19 @@ and the namespace is part of the OpenTofu state key, so the choice is load-beari
 rather than cosmetic. Namespaces are committed here alongside the claims that
 need them.
 
+**One folder per project and environment.** Claims live at
+`<project>/<environment>/<name>.yaml`, for example `atlas/prd/vpc.yaml`. A
+project is the tenant: it holds several services and shares its infra between
+them. The folder is the environment. It decides who must approve a change
+(`.github/CODEOWNERS`). `mode` is separate: it is only the size and cost
+profile, so a `prd` claim can use `mode: dev`. See
+[ADR 0009](../docs/adr/0009-trunk-and-staged-promotion.md).
+
+**`prd` claims are pinned to a Composition revision.** They set
+`spec.crossplane.compositionUpdatePolicy: Manual` and a
+`compositionRevisionRef`. A Composition edit does not reach them until a PR
+moves the pin.
+
 **Sync waves order the apply**, lowest first:
 
 | Wave | Resource | Why |
@@ -53,7 +66,8 @@ changed or removed`. To get a different CIDR, request a new network.
 ## How to request
 
 - **Backstage:** Create → "Create a Network (XNetwork)" or "Create an EKS
-  cluster (XEKSCluster)". Each opens a PR that adds `<name>.yaml` here, with
+  cluster (XEKSCluster)". Each opens a PR that adds
+  `<project>/<environment>/<name>.yaml` here, with
   the sync-wave and the `source-file-url` annotation already set. The EKS form
   picks its network from the existing XNetworks.
 - **By hand:** copy an existing claim. Keep the `argocd.argoproj.io/sync-wave`

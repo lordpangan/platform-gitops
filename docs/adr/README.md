@@ -13,6 +13,8 @@ Repo-specific decisions live here. System-wide decisions live in
 | [0006](./0006-mode-preset-pattern-for-infra-xrds.md) | Mode presets with per-field overrides as the standard infra XRD shape | Accepted |
 | [0007](./0007-network-topology-and-subnet-discovery-by-tier.md) | Network topology by mode, and subnet discovery by tier | Accepted |
 | [0008](./0008-guard-replace-forcing-fields.md) | Replace-forcing fields are immutable (CEL); presets are append-only | Accepted |
+| [0009](./0009-trunk-and-staged-promotion.md) | Two delivery modes on one trunk; promotion is a PR between environment folders | Accepted |
+| [0010](./0010-xrd-changes-and-api-versions.md) | XRD changes: additive changes in place; breaking-change route pending a test | Proposed |
 
 > The engine, remote-state, IAM, and GitOps-bootstrap decisions these build on are
 > system-wide and live in the

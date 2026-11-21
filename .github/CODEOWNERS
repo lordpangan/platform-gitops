@@ -1,0 +1,3 @@
+# Who must approve a change to an environment (ADR 0009).
+# One line per project and environment. A line can also name one service's file.
+/infra-requests/atlas/prd/   @lordpangan

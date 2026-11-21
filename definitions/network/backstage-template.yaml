@@ -3,7 +3,7 @@ kind: Template
 metadata:
   name: create-xnetwork
   title: Create a Network (XNetwork)
-  description: Request a VPC. Opens a PR that adds infra-requests/<name>.yaml.
+  description: Request a VPC. Opens a PR that adds infra-requests/<project>/<environment>/<name>.yaml.
   tags: [crossplane, network]
 spec:
   owner: group:default/guests
@@ -11,7 +11,7 @@ spec:
 
   parameters:
     - title: Network
-      required: [name, namespace, spec]
+      required: [name, namespace, environment, spec]
       properties:
         name:
           title: Name
@@ -19,10 +19,16 @@ spec:
           description: Lowercase letters, numbers and dashes. Also the file name.
           pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
         namespace:
-          title: Namespace (tenant)
+          title: Project (tenant, also the namespace)
           type: string
-          enum: [dev]
-          default: dev
+          enum: [atlas]
+          default: atlas
+        environment:
+          title: Environment
+          type: string
+          description: The folder the claim goes in. It decides who must approve.
+          enum: [prd]
+          default: prd
         spec:
           title: Settings
           type: object
@@ -62,14 +68,14 @@ spec:
             annotations:
               argocd.argoproj.io/sync-wave: "1"
               terasky.backstage.io/owner: group:default/guests
-              terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/${{ parameters.name }}.yaml
+              terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/${{ parameters.namespace }}/${{ parameters.environment }}/${{ parameters.name }}.yaml
           spec: ${{ parameters.spec }}
 
     - id: write
       name: Write the file
       action: roadiehq:utils:fs:write
       input:
-        path: infra-requests/${{ parameters.name }}.yaml
+        path: infra-requests/${{ parameters.namespace }}/${{ parameters.environment }}/${{ parameters.name }}.yaml
         content: ${{ steps.build.output.serialized }}
 
     - id: pr
