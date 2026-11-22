@@ -93,19 +93,9 @@ minor or patch follows [ADR 0010](../docs/adr/0010-xrd-changes-and-api-versions.
 while the API is `v1alpha1`, a breaking change bumps the minor, a fix bumps the
 patch.
 
-The `composition-release` workflow checks this on every PR. It fails when:
-
-- a changed Composition keeps its old label, or the new label is not higher;
-- a new or changed Composition has no label, or the label is not `1.2.3` form;
-- a claim pins a release that its Composition never had.
-
-Comment and formatting changes do not need a bump. The check can't judge the
-size of the bump. The reviewer does.
-
-Run it before you push:
-
-    make check-release   # the real repo against origin/main
-    make test-release    # the check's own test cases (no Docker)
+A CI gate enforces this on every PR. See
+[CI gates](../README.md#ci-gates) for what it checks, what it can't see, and
+how to run it locally (`make check-release`).
 
 ## Backstage forms
 

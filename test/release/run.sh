@@ -111,6 +111,9 @@ c_untracked_bad_claim()  { :; }
 c_untracked_bad_claim_untracked() { write_claim infra-requests/atlas/dev/vpc.yaml 9.9.9; }
 c_readme_only()          { echo "more" >> README.md; }
 c_numeric_compare()      { write_comp definitions/network/composition.yaml 0.1.10 3; }
+c_label_only_lowered()   { write_comp definitions/network/composition.yaml 0.1.0 2; }
+c_label_only_bump()      { write_comp definitions/network/composition.yaml 0.1.2 2; }
+c_name_changed()         { write_comp definitions/network/composition.yaml 0.1.2 2; sed -i.bak 's/name: xnetwork/name: xnetwork-v2/' definitions/network/composition.yaml; rm definitions/network/composition.yaml.bak; }
 
 run_case "content change without bump fails"            1 c_content_no_bump
 run_case "content change with patch bump passes"        0 c_content_patch_bump
@@ -125,6 +128,9 @@ run_case "invalid semver 1.0 fails"                     1 c_invalid_semver
 run_case "untracked claim with a bad release is ignored" 0 c_untracked_bad_claim
 run_case "no relevant change (README only) passes"      0 c_readme_only
 run_case "0.1.10 is higher than 0.1.1 (numeric compare)" 0 c_numeric_compare
+run_case "label lowered with no content change fails"    1 c_label_only_lowered
+run_case "label bumped with no content change passes"    0 c_label_only_bump
+run_case "Composition name changed fails"                1 c_name_changed
 
 echo
 echo "$pass passed, $bad failed"

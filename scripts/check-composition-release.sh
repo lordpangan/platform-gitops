@@ -13,6 +13,8 @@
 #    - If its content changed (comments, formatting and the label itself do not
 #      count), the label must be higher than on the base. A Composition that had
 #      no label on the base may take any valid label as its first one.
+#    - The label can never go down, even with no content change.
+#    - Its metadata.name must not change. A rename deletes its revisions.
 #
 # 2. Each claim in infra-requests/ and app-requests/ (tracked files only) that
 #    pins a release:
@@ -108,7 +110,21 @@ while IFS="$(printf '\t')" read -r status p1 p2; do
     report ok "$new" "$new is new with release $head_rel"
     continue
   fi
+  # A new name is a new Composition. The old one, and every revision it owns,
+  # would be deleted, and claims pinned to its releases would match nothing.
+  base_name="$(show "$mb" "$old" | yq -r '.metadata.name // ""' | sed -n 1p)"
+  head_name="$(show HEAD "$new" | yq -r '.metadata.name // ""' | sed -n 1p)"
+  if [ "$base_name" != "$head_name" ]; then
+    report FAIL "$new" "$new renames the Composition ($base_name -> $head_name): that deletes its revisions; keep the name, or add a new Composition next to it"
+    continue
+  fi
   base_rel="$(release_of "$mb" "$old")"
+  # A label change alone also makes a new revision. A lower label would then
+  # match an older release's claims, so it fails even with no content change.
+  if [ -n "$base_rel" ] && [ "$head_rel" != "$base_rel" ] && ! semver_gt "$head_rel" "$base_rel"; then
+    report FAIL "$new" "$new release went down ($base_rel -> $head_rel): a new release must be higher than the old one (ADR 0010)"
+    continue
+  fi
   if [ "$(normalized "$mb" "$old")" = "$(normalized HEAD "$new")" ]; then
     report ok "$new" "$new has no content change (release ${base_rel:-none} -> $head_rel)"
     continue
@@ -117,10 +133,8 @@ while IFS="$(printf '\t')" read -r status p1 p2; do
     report ok "$new" "$new changed and now has its first release label, $head_rel"
   elif [ "$head_rel" = "$base_rel" ]; then
     report FAIL "$new" "$new changed but release is still $base_rel: bump it (ADR 0010)"
-  elif semver_gt "$head_rel" "$base_rel"; then
-    report ok "$new" "$new changed and release went $base_rel -> $head_rel"
   else
-    report FAIL "$new" "$new release went down ($base_rel -> $head_rel): a new release must be higher than the old one (ADR 0010)"
+    report ok "$new" "$new changed and release went $base_rel -> $head_rel"
   fi
 done <<EOT
 $changes
@@ -163,7 +177,9 @@ while IFS= read -r f; do
       report FAIL "$f" "$f pins release $pin for kind $ckind, but no Composition under definitions/ serves that kind: fix the kind or add the Composition"
       continue
     fi
-    if releases_ever "$comp" | grep -Fxq -- "$pin"; then
+    # Collect first: grep -q stops at the first match and would break the pipe.
+    ever="$(releases_ever "$comp")"
+    if printf '%s\n' "$ever" | grep -Fxq -- "$pin"; then
       report ok "$f" "$f pins release $pin of $comp, which exists"
     else
       report FAIL "$f" "$f pins release $pin, but $comp never had that release: pin a release it has had, or release it first (ADR 0009)"
