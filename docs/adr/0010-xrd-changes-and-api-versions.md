@@ -195,6 +195,6 @@ The first label is `0.1.1`. The revisions before it have no label.
 ## To settle before building
 
 - **Run the test** in Decision 4, and write the chosen route into this ADR.
-- **Build the CI check** in decision 6, and add it to the ruleset.
-- **Which tool runs the CI check** (the render tests in `test/` are the
-  starting point).
+- **Add the CI check to the ruleset.** The check in decision 6 is built
+  (`.github/workflows/composition-release.yml`, job `release-label`). It must
+  still be added to the ruleset on `main` as a required check.

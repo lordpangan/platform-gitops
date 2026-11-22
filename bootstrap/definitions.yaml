@@ -17,4 +17,8 @@ spec:
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:
-    automated: { prune: true, selfHeal: true }
+    # No prune. Deleting a Composition deletes every revision it owns, and
+    # claims pinned to those releases stop. Deleting an XRD deletes every claim
+    # of its kind. A removed file leaves the object in place (OutOfSync); delete
+    # it by hand on purpose. See bootstrap/README.md.
+    automated: { prune: false, selfHeal: true }

@@ -241,8 +241,9 @@ costs more while it is up. Tear it down between test rounds.
   it with `<tenant>/<env>/<name>.yaml`.
 - Presets stay append-only (ADR 0008). The pin is a second guard, not a
   replacement.
-- Until the CI check exists, a forgotten label bump reaches every claim pinned
-  to that label. The reviewer of each Composition PR must check the label.
+- The `composition-release` workflow catches a forgotten label bump. It must be
+  a required check in the ruleset. Until then, a forgotten bump reaches every
+  claim pinned to that label, and the reviewer must check the label.
 
 ## To settle before building
 

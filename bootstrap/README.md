@@ -27,7 +27,7 @@ reconciled by ArgoCD itself. See
 `infra-requests/` refers to a kind like `XNetwork`, and that kind does not exist
 until its XRD is established.
 
-## Three settings that matter
+## Settings that matter
 
 **`directory.recurse: true` is required.** The manifests are in subfolders
 (`definitions/eks/`, `definitions/network/`), and ArgoCD does not look in
@@ -39,6 +39,18 @@ Healthy while applying nothing**. The tell is an empty `status.resources`.
 `infra-requests/`, and ArgoCD deletes the claim, which deletes its `Workspace`,
 which runs `tofu destroy`. That is how teardown is meant to work here. It is also
 how an accidental `git rm` becomes an outage.
+
+**`definitions.yaml` has `prune: false`.** Only `infra-requests.yaml` prunes.
+In `definitions/`, a delete costs too much to happen by accident:
+
+- Deleting a Composition deletes every revision it owns. Claims pinned to those
+  releases then match no revision and stop.
+- Deleting an XRD deletes its CRD. Kubernetes then deletes every claim of that
+  kind, and each claim's `Workspace` runs `tofu destroy`.
+
+So a removed file in `definitions/` leaves the object on the cluster. ArgoCD
+shows the app as OutOfSync. To really remove it, delete it by hand with
+`kubectl delete`, after you check that no claim still uses it.
 
 **`selfHeal: true` reverts manual changes.** Editing one of these objects with
 `kubectl` will not stick. Change the file and push.

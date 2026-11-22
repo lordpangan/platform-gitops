@@ -1,0 +1,21 @@
+# Keeps each Composition release label unique and rising (ADR 0010, ADR 0009).
+# There is no `paths:` filter on purpose. A required check with a paths filter
+# never reports on a PR that skips it, so that PR stays pending forever and
+# cannot merge. The script exits fast when nothing relevant changed.
+name: composition-release
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  release-label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the check needs history and the merge-base with main
+      - name: Show yq version
+        run: yq --version
+      - name: Check release labels
+        run: scripts/check-composition-release.sh "origin/${{ github.base_ref }}"

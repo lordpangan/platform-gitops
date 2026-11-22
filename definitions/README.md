@@ -82,6 +82,21 @@ CEL transition rules in each XRD reject updates that would replace or remove
 live infrastructure (see [`../infra-requests/README.md`](../infra-requests/README.md)
 for the list). They guard the **claim**. They can't guard the presets.
 
+## Release label
+
+Each Composition carries a semver label. For example, `definitions/network/composition.yaml`
+has `release: "0.1.1"`. Claims pin to it ([ADR 0009](../docs/adr/0009-trunk-and-staged-promotion.md)),
+so a change without a new label would roll every pinned claim at once.
+
+**Bump the label on every Composition change**, even a one-line fix. Major,
+minor or patch follows [ADR 0010](../docs/adr/0010-xrd-changes-and-api-versions.md):
+while the API is `v1alpha1`, a breaking change bumps the minor, a fix bumps the
+patch.
+
+A CI gate enforces this on every PR. See
+[CI gates](../README.md#ci-gates) for what it checks, what it can't see, and
+how to run it locally (`make check-release`).
+
 ## Backstage forms
 
 Each API folder can hold a `backstage-template.yaml`. ArgoCD skips it; Backstage
