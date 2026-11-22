@@ -7,15 +7,14 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
     terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/atlas/prd/vpc.yaml
 spec:
-  # prd is always pinned to a Composition release (ADR 0009). Promoting changes the label.
   crossplane:
     compositionUpdatePolicy: Automatic
     compositionRevisionSelector:
       matchLabels:
-        release: "0.1.1"
-  # The environment is prd (the folder). mode is only the size: dev saves cost.
+        release: 0.1.1
   mode: dev
   cidr: 192.168.0.0/16
   tags:
     owner: atlas
     env: prd
+    test: test
