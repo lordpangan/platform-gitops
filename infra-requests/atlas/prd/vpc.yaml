@@ -12,7 +12,7 @@ spec:
     compositionUpdatePolicy: Automatic
     compositionRevisionSelector:
       matchLabels:
-        release: "0.1.2"
+        release: "0.1.1"
   # The environment is prd (the folder). mode is only the size: dev saves cost.
   mode: dev
   cidr: 192.168.0.0/16
