@@ -127,38 +127,50 @@ lower environments, not the gate.
 A service's mode is which environment folders it has. There is no separate
 `deliveryMode` field to keep in step.
 
-### 5. For infra, the Composition revision is the version.
+### 5. For infra, the Composition release is the version.
 
-- **dev** claims keep `compositionUpdatePolicy: Automatic`. They take every new
-  revision first.
-- **uat** and **prd** claims are pinned to one revision.
+- **dev** claims keep `compositionUpdatePolicy: Automatic` with no selector.
+  They take every new revision first.
+- **uat** and **prd** claims are pinned to one release.
 - **`prd` is always pinned**, in both modes. It is the same rule as never
   running a container image on `latest`: you can audit what prd ran, and you
   can rebuild it.
 - Promoting moves the pin, in a PR, with the same approver.
 
-The Composition revision does for infra what the image tag does for an app.
+The Composition release does for infra what the image tag does for an app.
 
-A pinned claim looks like this (fields checked on the cluster, Crossplane
-v2.3.4, with `kubectl explain xnetwork.spec.crossplane`):
+A pinned claim looks like this:
 
 ```yaml
 spec:
   crossplane:
-    compositionUpdatePolicy: Manual
-    compositionRevisionRef:
-      name: xnetwork-d6f24a7
+    compositionUpdatePolicy: Automatic
+    compositionRevisionSelector:
+      matchLabels:
+        release: "0.1.1"
 ```
 
-**Pin by revision name.** The name is the Composition name plus the first seven
-characters of its content hash. It is exact, like an image digest. The dev
-claim already carries the name of the revision it runs, in the same field, so a
-promotion copies that name up. The PR description says what the revision
-changed.
+**Pin by the `release` label.** Each Composition carries a semver `release`
+label ([ADR 0010](./0010-xrd-changes-and-api-versions.md)). Crossplane copies it
+to each new revision. The claim uses the newest revision with that label. A
+promotion PR changes the label, for example `0.1.0` to `0.1.1`. People can read
+and remember a release. They can't remember a hash.
 
-A label-based pin (`compositionRevisionSelector`) was considered. It reads
-better, but someone must bump the label on every Composition edit. If they
-forget, two revisions share a label and the pin stops being exact.
+The policy is `Automatic`, not `Manual`. The Crossplane docs describe a label
+selector only with `Automatic`. With `Manual`, the docs say you move a claim by
+editing `compositionRevisionRef`; they don't say that a selector change moves
+it.
+
+**The label must be unique.** If someone changes a Composition and forgets to
+bump `release`, two revisions share a label. With `Automatic`, a claim on that
+label then moves to the new revision by itself, with no PR on its folder. A CI
+check prevents this (ADR 0010). The ruleset on `main` requires it.
+
+*Amended 2026-11-22.* This decision first pinned by revision name
+(`compositionUpdatePolicy: Manual` with `compositionRevisionRef.name`, for
+example `xnetwork-d6f24a7`). It is exact, and a test on the cluster showed it
+holds. It was replaced because people can't read a hash. A label pin with a
+required uniqueness check gives the same exactness.
 
 ### 6. Environment and `mode` are separate things.
 
@@ -198,8 +210,9 @@ costs more while it is up. Tear it down between test rounds.
   must say how long each is supported. Crossplane keeps every revision: the
   cluster holds all 8 of each Composition, back to the first. ArgoCD has not
   pruned them.
-- Reverting a Composition to earlier content reuses the earlier revision, with
-  the same name. A pin to it stays valid.
+- Reverting a Composition to earlier content is a new release with a new
+  label. A label change makes a new revision, so a pin to the old label still
+  finds the old revision.
 - A pin does not make a breaking change safe. If a revision changes something
   that replaces infrastructure, moving the pin replaces it. Breaking revisions
   are planned as their own change, and the promotion PR must say so.
@@ -228,6 +241,8 @@ costs more while it is up. Tear it down between test rounds.
   it with `<tenant>/<env>/<name>.yaml`.
 - Presets stay append-only (ADR 0008). The pin is a second guard, not a
   replacement.
+- Until the CI check exists, a forgotten label bump reaches every claim pinned
+  to that label. The reviewer of each Composition PR must check the label.
 
 ## To settle before building
 
