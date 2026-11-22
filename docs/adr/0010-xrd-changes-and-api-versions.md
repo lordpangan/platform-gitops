@@ -141,9 +141,25 @@ While the API is `v1alpha1` or `v1beta1`, the major stays `0`. This follows
 semver: a `0.y.z` release is not yet stable. During `0.y.z`, a breaking change
 bumps the minor.
 
-Claims still pin by revision name, not by this label (ADR 0009). The hash is
-exact. A label can be wrong if someone forgets to bump it. A promotion PR shows
-both, for example `0.1.0 (xnetwork-d6f24a7) to 0.1.1 (xnetwork-1a2b3c4)`.
+Claims pin by this label (ADR 0009). So each label must belong to one
+revision only.
+
+### 6. A required CI check keeps each release label unique.
+
+On every PR, a check compares each changed Composition with `main`. It fails
+when:
+
+- the content changed but `release` didn't, or
+- the new `release` isn't higher than the old one, or
+- a new Composition has no `release` label.
+
+The ruleset on `main` requires the check to pass before a merge. The check
+can't judge whether the bump is the right size (major, minor or patch). The
+reviewer judges that.
+
+*Amended 2026-11-22.* This first said claims pin by revision name and the label
+is only for people. ADR 0009 now pins by the label, so the check became
+required.
 
 The first label is `0.1.1`. The revisions before it have no label.
 
@@ -179,7 +195,6 @@ The first label is `0.1.1`. The revisions before it have no label.
 ## To settle before building
 
 - **Run the test** in Decision 4, and write the chosen route into this ADR.
-- **A CI check that the `release` label changed** whenever a Composition's
-  content changed.
+- **Build the CI check** in decision 6, and add it to the ruleset.
 - **Which tool runs the CI check** (the render tests in `test/` are the
   starting point).
