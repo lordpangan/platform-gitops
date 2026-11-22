@@ -1,0 +1,11 @@
+apiVersion: platform.meridian.io/v1alpha1
+kind: XNetwork
+metadata:
+  name: dev-vpc-2
+  namespace: atlas
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    terasky.backstage.io/owner: group:default/guests
+    terasky.backstage.io/source-file-url: https://github.com/lordpangan/platform-gitops/blob/main/infra-requests/atlas/prd/dev-vpc-2.yaml
+spec:
+  mode: dev
