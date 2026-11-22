@@ -82,6 +82,31 @@ CEL transition rules in each XRD reject updates that would replace or remove
 live infrastructure (see [`../infra-requests/README.md`](../infra-requests/README.md)
 for the list). They guard the **claim**. They can't guard the presets.
 
+## Release label
+
+Each Composition carries a semver label. For example, `definitions/network/composition.yaml`
+has `release: "0.1.1"`. Claims pin to it ([ADR 0009](../docs/adr/0009-trunk-and-staged-promotion.md)),
+so a change without a new label would roll every pinned claim at once.
+
+**Bump the label on every Composition change**, even a one-line fix. Major,
+minor or patch follows [ADR 0010](../docs/adr/0010-xrd-changes-and-api-versions.md):
+while the API is `v1alpha1`, a breaking change bumps the minor, a fix bumps the
+patch.
+
+The `composition-release` workflow checks this on every PR. It fails when:
+
+- a changed Composition keeps its old label, or the new label is not higher;
+- a new or changed Composition has no label, or the label is not `1.2.3` form;
+- a claim pins a release that its Composition never had.
+
+Comment and formatting changes do not need a bump. The check can't judge the
+size of the bump. The reviewer does.
+
+Run it before you push:
+
+    make check-release   # the real repo against origin/main
+    make test-release    # the check's own test cases (no Docker)
+
 ## Backstage forms
 
 Each API folder can hold a `backstage-template.yaml`. ArgoCD skips it; Backstage

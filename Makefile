@@ -27,7 +27,7 @@ EKS_PRD_XR      := $(CURDIR)/test/eks/xr-prd.yaml
 EKS_OVERRIDE_XR := $(CURDIR)/test/eks/xr-override.yaml
 
 .DEFAULT_GOAL := help
-.PHONY: help test render-smoke test-smoke render-xnetwork test-xnetwork test-xnetwork-prd test-xnetwork-override render-eks test-eks test-eks-prd test-eks-override
+.PHONY: help test render-smoke test-smoke render-xnetwork test-xnetwork test-xnetwork-prd test-xnetwork-override render-eks test-eks test-eks-prd test-eks-override test-release check-release
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -159,3 +159,14 @@ test-eks-override:  ## Render an override claim and assert explicit nodes.* beat
 	refute 'value: SPOT'       'capacity preset did not leak (no SPOT)'; \
 	refute '<no value>'        'no unresolved template values'; \
 	if [ $$fail -eq 0 ]; then echo "PASS — XEKSCluster override beats preset per-field"; else echo "FAIL — XEKSCluster override assertions"; exit 1; fi
+
+# --- release labels ----------------------------------------------------------
+# Claims pin a Composition by its release label (ADR 0009, ADR 0010). CI checks
+# that a changed Composition gets a higher label. These need git, yq and jq, not
+# Docker, so they are not part of `test`.
+
+test-release:  ## Test the Composition release-label check (no Docker)
+	@cd .. && devbox run -- $(CURDIR)/test/release/run.sh
+
+check-release:  ## Run the release-label check against origin/main
+	@cd .. && devbox run -- bash -c 'cd "$(CURDIR)" && scripts/check-composition-release.sh origin/main'
